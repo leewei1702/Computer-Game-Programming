@@ -102,6 +102,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			}
 			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
 			break;
+			// Swapping background
 		case '1':
 			currentbg = bg1;
 			break;
@@ -112,21 +113,18 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			currentbg = bg3;
 			break;
 			//Press F to swap to fullscreen/windowed mode
-			//case 'f':
-			//case 'F':
-			//	if (d3dPP.Windowed == true) {
-			//		cout << "fullscreen on\n";
-			//		d3dPP.Windowed = false;
-			//	}
-			//	else {
-			//		cout << "windowed on\n";
-			//		d3dPP.Windowed = true;
-			//	}
-			//	HRESULT hr = d3dDevice->Reset(&d3dPP);
-			//	if (FAILED(hr)) {
-			//		cout << "Resetting Device Failed !!!";
-			//	}
-			//	break;
+		case 'f':
+		case 'F':
+			if (d3dPP.Windowed == true) {
+				cout << "fullscreen on\n";
+				d3dPP.Windowed = false;
+			}
+			else {
+				cout << "windowed on\n";
+				d3dPP.Windowed = true;
+			}
+
+			break;
 		}
 		break;
 	case WM_MOUSEMOVE:
@@ -187,7 +185,7 @@ void createDirectX() {
 	d3dPP.BackBufferWidth = 1280; //default = 400
 	d3dPP.BackBufferHeight = 720; //default = 300
 	d3dPP.hDeviceWindow = g_hWnd;
-
+	
 	HRESULT hr = direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dPP, &d3dDevice);
 
 	if (FAILED(hr))
@@ -205,22 +203,26 @@ void render() {
 	D3DXVECTOR2 spriteCentre;
 	D3DXVECTOR2 trans;
 	D3DXMATRIX mat;
+	D3DXVECTOR2 scaling;
+
 
 	spriteCentre = D3DXVECTOR2(256, 256);
 	trans = D3DXVECTOR2(0, 0);
 	mat;
+	scaling = D3DXVECTOR2(3.2, 2.4);
 
-	D3DXMatrixTransformation2D(&mat, NULL, 0.0, NULL, &spriteCentre, NULL, &trans);
+	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
 
 	sprite->SetTransform(&mat);
 
 	sprite->Draw(currentbg, &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
-    spriteCentre = D3DXVECTOR2(12, 12);
+    spriteCentre = D3DXVECTOR2(0, 0);
 	trans = D3DXVECTOR2(x, y);
 	mat;
+	scaling = D3DXVECTOR2(1.0, 1.0);
 	
-	D3DXMatrixTransformation2D(&mat, NULL, 0.0, NULL, &spriteCentre, NULL, &trans);
+	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
 
 	sprite->SetTransform(&mat);
 
@@ -245,8 +247,6 @@ void createSprite() {
 		cout << "Create Sprite Failed!!!";
 	}
 
-	//	Create texture. Study the documentation.
-	//load the graphic file to the GPU memory
 	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg1.png", &bg1);
 	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg2.png", &bg2);
 	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg3.png", &bg3);
@@ -262,7 +262,6 @@ void createSprite() {
 		cout << "Create Texture from File Failed!!!";
 	}
 
-	//	Specify the "	" rectangle.
 	spriteRect.left = 0;
 	spriteRect.right = 400;
 	spriteRect.top = 0;
