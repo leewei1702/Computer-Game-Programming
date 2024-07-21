@@ -43,6 +43,42 @@ int redInc = 1;
 int greenInc = 1;
 int blueInc = 1;
 
+//RGB color for pointer sprite
+int redPointer = 255;
+int greenPointer = 255;
+int bluePointer = 255;
+
+int seq;
+
+void changeCursorColor() {
+	switch (seq) {
+	case 1:
+		redPointer = 255;
+		greenPointer = 0;
+		bluePointer = 0;
+		break;
+	case 2:
+		redPointer = 0;
+		greenPointer = 255;
+		bluePointer = 0;
+		break;
+	case 3:
+		redPointer = 0;
+		greenPointer = 0;
+		bluePointer = 255;
+		break;
+	case 4:
+		redPointer = 0;
+		greenPointer = 0;
+		bluePointer = 0;
+		break;
+	default:
+		redPointer = 255;
+		greenPointer = 255;
+		bluePointer = 255;
+		break;
+	}
+}
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -112,6 +148,21 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		case '3':
 			currentbg = bg3;
 			break;
+			// <-/-> change the color of cursor
+		case VK_LEFT:
+			seq++;
+			if (seq > 4) {
+				seq = 0;
+			}
+			changeCursorColor();
+			break;
+		case VK_RIGHT:
+			seq--;
+			if (seq < 0) {
+				seq = 4;
+			}
+			changeCursorColor();
+			break;
 			//Press F to swap to fullscreen/windowed mode
 		case 'f':
 		case 'F':
@@ -152,7 +203,7 @@ void createWindow() {
 
 	RegisterClass(&wndClass);
 
-	g_hWnd = CreateWindowEx(0, wndClass.lpszClassName, "Valorant 3.0", WS_OVERLAPPEDWINDOW, 0, 100, 1280, 720, NULL, NULL, GetModuleHandle(NULL), NULL);
+	g_hWnd = CreateWindowEx(0, wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, 1280, 720, NULL, NULL, GetModuleHandle(NULL), NULL);
 	ShowCursor(false);
 	ShowWindow(g_hWnd, 1);
 
@@ -226,7 +277,7 @@ void render() {
 
 	sprite->SetTransform(&mat);
 
-	sprite->Draw(pointer, NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	sprite->Draw(pointer, NULL, NULL, NULL, D3DCOLOR_XRGB(redPointer, greenPointer, bluePointer));
 
 	sprite->End();
 
