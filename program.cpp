@@ -9,6 +9,64 @@
 #include <iostream>
 using namespace std;
 
+class SpriteSheet
+{
+private:
+	int totalSpriteWidth;
+	int totalSpriteHeight;
+	int spriteRow;
+	int spriteCol;
+	int currentFrame;
+	int maxFrame;
+
+public:
+	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight, int spriteRow, int spriteCol, int currentFrame, int maxFrame)
+	{
+		this->totalSpriteWidth = totalSpriteWidth;
+		this->totalSpriteHeight = totalSpriteHeight;
+		this->spriteRow = spriteRow;
+		this->spriteCol = spriteCol;
+		this->currentFrame = currentFrame;
+		this->maxFrame = maxFrame;
+	}
+	int getTotalSpriteWidth() {
+		return totalSpriteWidth;
+	}
+	int getTotalSpriteHeight() {
+		return totalSpriteHeight;
+	}
+	int getSpriteRow() {
+		return spriteRow;
+	}
+	int getSpriteCol() {
+		return spriteCol;
+	}
+	int getCurrentFrame() {
+		return currentFrame;
+	}
+	int getMaxFrame() {
+		return maxFrame;
+	}
+	int getSpriteWidth() {
+		return totalSpriteWidth / spriteCol;
+	}
+	int getSpriteHeight() {
+		return totalSpriteHeight / spriteRow;
+	}
+	void nextFrame() {
+		currentFrame++;
+		if (currentFrame >= maxFrame) {
+			currentFrame = 0;
+		}
+	}
+	void prevFrame() {
+		currentFrame--;
+		if (currentFrame < 0) {
+			currentFrame = maxFrame - 1;
+		}
+	}
+};
+
 WNDCLASS wndClass;
 HWND g_hWnd = NULL;
 MSG msg;
@@ -31,16 +89,12 @@ LPD3DXSPRITE sprite = NULL;
 RECT spriteRect;
 RECT numRect;
 
-//SpriteCrop
-int totalSpriteWidth = 128;
-int totalSpriteHeight = 128;
-int spriteRow = 4;
-int spriteCol = 4;
-int numCount = 0;
-int maxCount = 16;
+//Screen Resolution
+int screenWidth = 1280;
+int screenHeight = 720;
 
-int spriteWidth = totalSpriteWidth/spriteCol;
-int spriteHeight = totalSpriteHeight/spriteRow;
+//Sprite Sheet
+SpriteSheet numSprite(128,128,4,4,0,16);
 
 //Default value for rgb color
 int red = 0;
@@ -174,23 +228,12 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			}
 			changeCursorColor();
 			break;
-			//Press F to swap to fullscreen/windowed mode
-		case 'f':
-		case 'F':
-			if (d3dPP.Windowed == true) {
-				cout << "fullscreen on\n";
-				d3dPP.Windowed = false;
-			}
-			else {
-				cout << "windowed on\n";
-				d3dPP.Windowed = true;
-			}
-			break;
 		case VK_UP:
-			numCount++;
-			if (numCount >= maxCount) {
-				numCount = 0;
-			}
+			numSprite.nextFrame();
+			break;
+		case VK_DOWN:
+			numSprite.prevFrame();
+			break;
 		}
 		break;
 	case WM_MOUSEMOVE:
@@ -218,7 +261,7 @@ void createWindow() {
 
 	RegisterClass(&wndClass);
 
-	g_hWnd = CreateWindowEx(0, wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, 1280, 720, NULL, NULL, GetModuleHandle(NULL), NULL);
+	g_hWnd = CreateWindowEx(0, wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 	ShowCursor(false);
 	ShowWindow(g_hWnd, 1);
 
@@ -248,8 +291,8 @@ void createDirectX() {
 	d3dPP.SwapEffect = D3DSWAPEFFECT_DISCARD;
 	d3dPP.BackBufferFormat = D3DFMT_X8R8G8B8;
 	d3dPP.BackBufferCount = 1;
-	d3dPP.BackBufferWidth = 1280; //default = 400
-	d3dPP.BackBufferHeight = 720; //default = 300
+	d3dPP.BackBufferWidth = screenWidth; 
+	d3dPP.BackBufferHeight = screenHeight; 
 	d3dPP.hDeviceWindow = g_hWnd;
 
 	HRESULT hr = direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dPP, &d3dDevice);
@@ -284,13 +327,13 @@ void render() {
 	sprite->Draw(currentbg, &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Numbers
-	numRect.left = numCount % spriteCol * spriteWidth;
-	numRect.right = numCount % spriteCol * spriteWidth + spriteWidth;
-	numRect.top = numCount / spriteRow * spriteHeight;
-	numRect.bottom = numCount / spriteRow * spriteHeight + spriteHeight;
+	numRect.left = numSprite.getCurrentFrame() % numSprite.getSpriteCol() * numSprite.getSpriteWidth();
+	numRect.right = numSprite.getCurrentFrame() % numSprite.getSpriteCol() * numSprite.getSpriteWidth() + numSprite.getSpriteWidth();
+	numRect.top = numSprite.getCurrentFrame() / numSprite.getSpriteRow() * numSprite.getSpriteHeight();
+	numRect.bottom = numSprite.getCurrentFrame() / numSprite.getSpriteRow() * numSprite.getSpriteHeight() + numSprite.getSpriteHeight();
 
 	spriteCentre = D3DXVECTOR2(64, 64);
-	trans = D3DXVECTOR2(0, 0);
+	trans = D3DXVECTOR2(20, 20);
 	mat;
 	scaling = D3DXVECTOR2(1, 1);
 
