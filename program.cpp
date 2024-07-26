@@ -35,6 +35,7 @@ private:
 	int spriteCol;
 	int currentFrame;
 	int maxFrame;
+	RECT spriteRect;
 
 public:
 	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight, int spriteRow, int spriteCol, int currentFrame, int maxFrame)
@@ -47,6 +48,11 @@ public:
 		this->maxFrame = maxFrame;
 		this->spriteWidth = totalSpriteWidth / spriteCol;
 		this->spriteHeight = totalSpriteHeight / spriteRow;
+		spriteRect.left = 0;
+		spriteRect.right = 0;
+		spriteRect.top = 0;
+		spriteRect.bottom = 0;
+
 	}
 	int getTotalSpriteWidth() {
 		return totalSpriteWidth;
@@ -84,53 +90,124 @@ public:
 			currentFrame = maxFrame - 1;
 		}
 	}
-	int getRectLeft() {
-		return currentFrame % spriteCol * spriteWidth;
-	}
-	int getRectRight() {
-		return currentFrame % spriteCol * spriteWidth + spriteWidth;
-	}
-	int getRectTop() {
-		return currentFrame / spriteRow * spriteHeight;
-	}
-	int getRectBottom() {
-		return currentFrame / spriteRow * spriteHeight + spriteHeight;
+	RECT& crop() {
+		spriteRect.left = currentFrame % spriteCol * spriteWidth;
+		spriteRect.right = currentFrame % spriteCol * spriteWidth + spriteWidth;
+		spriteRect.top = currentFrame / spriteRow * spriteHeight;
+		spriteRect.bottom = currentFrame / spriteRow * spriteHeight + spriteHeight;
+		return spriteRect;
 	}
 };
 
-//pointer to a texture file
-LPDIRECT3DTEXTURE9 bg1 = NULL;
-LPDIRECT3DTEXTURE9 bg2 = NULL;
-LPDIRECT3DTEXTURE9 bg3 = NULL;
-LPDIRECT3DTEXTURE9 currentbg = NULL;
-LPDIRECT3DTEXTURE9 pointer = NULL;
-LPDIRECT3DTEXTURE9 numTexture = NULL;
+//Sprite Transformation Class
+class SpriteTransform {
+private:
+	D3DXVECTOR2 spriteCentre;
+	D3DXVECTOR2 trans;
+	D3DXMATRIX mat;
+	D3DXVECTOR2 scaling;
+public:
+	SpriteTransform(D3DXVECTOR2 spriteCentre, D3DXVECTOR2 trans, D3DXVECTOR2 scaling) {
+		this->spriteCentre = spriteCentre;
+		this->trans = trans;
+		this->scaling = scaling;
+	}
+	D3DXVECTOR2& getSpriteCentre() {
+		return spriteCentre;
+	}
+	D3DXVECTOR2& getTrans() {
+		return trans;
+	}
+	D3DXMATRIX& getMat() {
+		return mat;
+	}
+	D3DXVECTOR2& getScaling() {
+		return scaling;
+	}
+	void setSpriteCentre(D3DXVECTOR2 spriteCentre) {
+		this->spriteCentre = spriteCentre;
+	}
+	void setTrans(D3DXVECTOR2 trans) {
+		this->trans = trans;
+	}
+	void setMat(D3DXMATRIX mat) {
+		this->mat = mat;
+	}
+	void setScaling(D3DXVECTOR2 scaling) {
+		this->scaling = scaling;
+	}
+	void transform() {
+		D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
+	}
+};
+
+ //Texture Class
+class Texture {
+private:
+	LPDIRECT3DTEXTURE9 texture;
+	LPCTSTR fileLocation = "";
+	int redKey=0, greenKey=0, blueKey=0;
+public:
+	Texture(LPDIRECT3DTEXTURE9 texture, LPCTSTR fileLocation, int redKey, int greenKey, int blueKey) {
+		this->texture = texture;
+		this->fileLocation = fileLocation;
+		this->redKey = redKey;
+		this->greenKey = greenKey;
+		this->blueKey = blueKey;
+	}
+	Texture(LPDIRECT3DTEXTURE9 texture, LPCTSTR fileLocation) {
+		this->texture = texture;
+		this->fileLocation = fileLocation;
+	}
+	Texture(LPDIRECT3DTEXTURE9 texture) {
+		this->texture = texture;
+	}
+	HRESULT createTextureFromFile() {
+		return D3DXCreateTextureFromFile(directStruct.d3dDevice, fileLocation, &texture);
+	}
+	HRESULT createTextureFromFileEx() {
+		return D3DXCreateTextureFromFileEx(directStruct.d3dDevice, fileLocation, D3DX_DEFAULT, D3DX_DEFAULT,
+			D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
+			D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(redKey, greenKey, blueKey),
+			NULL, NULL, &texture);
+	}
+	LPDIRECT3DTEXTURE9 getTexture() {
+		return texture;
+	}
+	void setTexture(LPDIRECT3DTEXTURE9 texture) {
+		this->texture = texture;
+	}
+};
+
+//pointer to a texture file - (texture, file location, red filter key, green filter key, blue filter key)
+Texture bg1(NULL, "Assets/bg1.png");
+Texture bg2(NULL, "Assets/bg2.png");
+Texture bg3(NULL, "Assets/bg3.png");
+Texture currentbg(NULL);
+Texture pointer(NULL, "Assets/pointer.png");
+Texture numTexture(NULL, "Assets/numbers.bmp", 0, 128, 0);
+Texture explosion(NULL, "Assets/explosion.png");
+
 //pointer to a sprite interface 
 LPD3DXSPRITE sprite = NULL;
 RECT spriteRect;
-RECT numRect;
-
-//Sprite Transformation
-D3DXVECTOR2 spriteCentre;
-D3DXVECTOR2 trans;
-D3DXMATRIX mat;
-D3DXVECTOR2 scaling;
 
 //Screen Resolution
 int screenWidth = 1280;
 int screenHeight = 720;
 
-//Sprite Sheet
+//Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 SpriteSheet numSprite(128,128,4,4,0,16);
+SpriteSheet explosionSprite(2048, 2048, 8, 8, 0, 64);
+
+// x and y position of the mouse
+int x;
+int y;
 
 //Default value for rgb color
 int red = 0;
 int green = 0;
 int blue = 0;
-
-// x and y position of the mouse
-int x;
-int y;
 
 //The value to inc/dec rgb color
 int redInc = 1;
@@ -257,9 +334,11 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			break;
 		case VK_UP:
 			numSprite.nextFrame();
+			explosionSprite.nextFrame();
 			break;
 		case VK_DOWN:
 			numSprite.prevFrame();
+			explosionSprite.prevFrame();
 			break;
 		}
 		break;
@@ -331,46 +410,44 @@ void createDirectX() {
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 
+	//Sprite Transform Object - (Center, Translation, Scaling)
+	SpriteTransform bgTrans(D3DXVECTOR2(256, 256), D3DXVECTOR2(0, 0), D3DXVECTOR2(3.2, 2.4));
+	SpriteTransform numTrans(D3DXVECTOR2(64, 64), D3DXVECTOR2(30, 30), D3DXVECTOR2(1, 1));
+	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(x, y), D3DXVECTOR2(1, 1));
+	SpriteTransform explosionTrans(D3DXVECTOR2(1024, 1024), D3DXVECTOR2(200, 200), D3DXVECTOR2(1, 1));
+
 	//Background
-	spriteCentre = D3DXVECTOR2(256, 256);
-	trans = D3DXVECTOR2(0, 0);
-	mat;
-	scaling = D3DXVECTOR2(3.2, 2.4);
+	spriteRect.left = 0;
+	spriteRect.right = 400;
+	spriteRect.top = 0;
+	spriteRect.bottom = 300;
 
-	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
+	bgTrans.transform();
 
-	sprite->SetTransform(&mat);
+	sprite->SetTransform(&bgTrans.getMat());
 
-	sprite->Draw(currentbg, &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	sprite->Draw(currentbg.getTexture(), &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Numbers
-	numRect.left = numSprite.getRectLeft();
-	numRect.right = numSprite.getRectRight();
-	numRect.top = numSprite.getRectTop();
-	numRect.bottom = numSprite.getRectBottom();
+	numTrans.transform();
 
-	spriteCentre = D3DXVECTOR2(64, 64);
-	trans = D3DXVECTOR2(30, 30);
-	mat;
-	scaling = D3DXVECTOR2(1, 1);
+	sprite->SetTransform(&numTrans.getMat());
 
-	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
-
-	sprite->SetTransform(&mat);
-
-	sprite->Draw(numTexture, &numRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	sprite->Draw(numTexture.getTexture(), &numSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Pointer
-	spriteCentre = D3DXVECTOR2(0, 0);
-	trans = D3DXVECTOR2(x, y);
-	mat;
-	scaling = D3DXVECTOR2(1.0, 1.0);
+	pointerTrans.transform();
 
-	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
+	sprite->SetTransform(&pointerTrans.getMat());
 
-	sprite->SetTransform(&mat);
+	sprite->Draw(pointer.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(redPointer, greenPointer, bluePointer));
 
-	sprite->Draw(pointer, NULL, NULL, NULL, D3DCOLOR_XRGB(redPointer, greenPointer, bluePointer));
+	//Explosion
+	explosionTrans.transform();
+
+	sprite->SetTransform(&explosionTrans.getMat());
+
+	sprite->Draw(explosion.getTexture(), &explosionSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	sprite->End();
 }
@@ -400,40 +477,36 @@ void createSprite() {
 		cout << "Create Sprite Failed!!!";
 	}
 
-	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg1.png", &bg1);
-	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg2.png", &bg2);
-	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg3.png", &bg3);
-	currentbg = bg1;
+	hr = bg1.createTextureFromFile();
+	hr = bg2.createTextureFromFile();
+	hr = bg3.createTextureFromFile();
+	currentbg.setTexture(bg1.getTexture());
 
-	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/pointer.png", &pointer);
+	hr = pointer.createTextureFromFile();
+	hr = explosion.createTextureFromFile();
 
-	hr = D3DXCreateTextureFromFileEx(directStruct.d3dDevice, "Assets/numbers.bmp", D3DX_DEFAULT, D3DX_DEFAULT,
-										D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 
-										D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(0, 128, 0), 
-										NULL, NULL, &numTexture);
+	hr = numTexture.createTextureFromFileEx();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
 	}
-
-	spriteRect.left = 0;
-	spriteRect.right = 400;
-	spriteRect.top = 0;
-	spriteRect.bottom = 300;
 }
 
 void cleanupSprite() {
 	sprite->Release();
 	sprite = NULL;
 
-	currentbg->Release();
+	currentbg.getTexture()->Release();
 	currentbg = NULL;
 
-	pointer->Release();
+	pointer.getTexture()->Release();
 	pointer = NULL;
 
-	numTexture->Release();
+	numTexture.getTexture()->Release();
 	numTexture = NULL;
+
+	explosion.getTexture()->Release();
+	explosion = NULL;
 }
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
