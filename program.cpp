@@ -29,6 +29,8 @@ class SpriteSheet
 private:
 	int totalSpriteWidth;
 	int totalSpriteHeight;
+	int spriteWidth;
+	int spriteHeight;
 	int spriteRow;
 	int spriteCol;
 	int currentFrame;
@@ -43,6 +45,8 @@ public:
 		this->spriteCol = spriteCol;
 		this->currentFrame = currentFrame;
 		this->maxFrame = maxFrame;
+		this->spriteWidth = totalSpriteWidth / spriteCol;
+		this->spriteHeight = totalSpriteHeight / spriteRow;
 	}
 	int getTotalSpriteWidth() {
 		return totalSpriteWidth;
@@ -63,10 +67,10 @@ public:
 		return maxFrame;
 	}
 	int getSpriteWidth() {
-		return totalSpriteWidth / spriteCol;
+		return spriteWidth;
 	}
 	int getSpriteHeight() {
-		return totalSpriteHeight / spriteRow;
+		return spriteHeight;
 	}
 	void nextFrame() {
 		currentFrame++;
@@ -79,6 +83,18 @@ public:
 		if (currentFrame < 0) {
 			currentFrame = maxFrame - 1;
 		}
+	}
+	int getRectLeft() {
+		return currentFrame % spriteCol * spriteWidth;
+	}
+	int getRectRight() {
+		return currentFrame % spriteCol * spriteWidth + spriteWidth;
+	}
+	int getRectTop() {
+		return currentFrame / spriteRow * spriteHeight;
+	}
+	int getRectBottom() {
+		return currentFrame / spriteRow * spriteHeight + spriteHeight;
 	}
 };
 
@@ -328,10 +344,10 @@ void spriteRender() {
 	sprite->Draw(currentbg, &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Numbers
-	numRect.left = numSprite.getCurrentFrame() % numSprite.getSpriteCol() * numSprite.getSpriteWidth();
-	numRect.right = numSprite.getCurrentFrame() % numSprite.getSpriteCol() * numSprite.getSpriteWidth() + numSprite.getSpriteWidth();
-	numRect.top = numSprite.getCurrentFrame() / numSprite.getSpriteRow() * numSprite.getSpriteHeight();
-	numRect.bottom = numSprite.getCurrentFrame() / numSprite.getSpriteRow() * numSprite.getSpriteHeight() + numSprite.getSpriteHeight();
+	numRect.left = numSprite.getRectLeft();
+	numRect.right = numSprite.getRectRight();
+	numRect.top = numSprite.getRectTop();
+	numRect.bottom = numSprite.getRectBottom();
 
 	spriteCentre = D3DXVECTOR2(64, 64);
 	trans = D3DXVECTOR2(30, 30);
