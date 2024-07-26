@@ -25,9 +25,22 @@ LPDIRECT3DTEXTURE9 bg2 = NULL;
 LPDIRECT3DTEXTURE9 bg3 = NULL;
 LPDIRECT3DTEXTURE9 currentbg = NULL;
 LPDIRECT3DTEXTURE9 pointer = NULL;
+LPDIRECT3DTEXTURE9 numTexture = NULL;
 //pointer to a sprite interface 
 LPD3DXSPRITE sprite = NULL;
 RECT spriteRect;
+RECT numRect;
+
+//SpriteCrop
+int totalSpriteWidth = 128;
+int totalSpriteHeight = 128;
+int spriteRow = 4;
+int spriteCol = 4;
+int numCount = 0;
+int maxCount = 16;
+
+int spriteWidth = totalSpriteWidth/spriteCol;
+int spriteHeight = totalSpriteHeight/spriteRow;
 
 //Default value for rgb color
 int red = 0;
@@ -84,8 +97,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 {
 	switch (message)
 	{
-
-
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -174,8 +185,12 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 				cout << "windowed on\n";
 				d3dPP.Windowed = true;
 			}
-
 			break;
+		case VK_UP:
+			numCount++;
+			if (numCount >= maxCount) {
+				numCount = 0;
+			}
 		}
 		break;
 	case WM_MOUSEMOVE:
@@ -236,7 +251,7 @@ void createDirectX() {
 	d3dPP.BackBufferWidth = 1280; //default = 400
 	d3dPP.BackBufferHeight = 720; //default = 300
 	d3dPP.hDeviceWindow = g_hWnd;
-	
+
 	HRESULT hr = direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dPP, &d3dDevice);
 
 	if (FAILED(hr))
@@ -256,7 +271,7 @@ void render() {
 	D3DXMATRIX mat;
 	D3DXVECTOR2 scaling;
 
-
+	//Background
 	spriteCentre = D3DXVECTOR2(256, 256);
 	trans = D3DXVECTOR2(0, 0);
 	mat;
@@ -268,11 +283,29 @@ void render() {
 
 	sprite->Draw(currentbg, &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
-    spriteCentre = D3DXVECTOR2(0, 0);
+	//Numbers
+	numRect.left = numCount % spriteCol * spriteWidth;
+	numRect.right = numCount % spriteCol * spriteWidth + spriteWidth;
+	numRect.top = numCount / spriteRow * spriteHeight;
+	numRect.bottom = numCount / spriteRow * spriteHeight + spriteHeight;
+
+	spriteCentre = D3DXVECTOR2(64, 64);
+	trans = D3DXVECTOR2(0, 0);
+	mat;
+	scaling = D3DXVECTOR2(1, 1);
+
+	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
+
+	sprite->SetTransform(&mat);
+
+	sprite->Draw(numTexture, &numRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	//Pointer
+	spriteCentre = D3DXVECTOR2(0, 0);
 	trans = D3DXVECTOR2(x, y);
 	mat;
 	scaling = D3DXVECTOR2(1.0, 1.0);
-	
+
 	D3DXMatrixTransformation2D(&mat, NULL, 0.0, &scaling, &spriteCentre, NULL, &trans);
 
 	sprite->SetTransform(&mat);
@@ -304,10 +337,11 @@ void createSprite() {
 	currentbg = bg1;
 
 	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/pointer.png", &pointer);
-	//hr = D3DXCreateTextureFromFileEx(d3dDevice, "Assets/bg1.png", D3DX_DEFAULT, D3DX_DEFAULT,
-	//									D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 
-	//									D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(255, 255, 255), 
-	//									NULL, NULL, &texture);
+
+	hr = D3DXCreateTextureFromFileEx(d3dDevice, "Assets/numbers.bmp", D3DX_DEFAULT, D3DX_DEFAULT,
+										D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 
+										D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(0, 128, 0), 
+										NULL, NULL, &numTexture);
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -328,6 +362,9 @@ void cleanupSprite() {
 
 	pointer->Release();
 	pointer = NULL;
+
+	numTexture->Release();
+	numTexture = NULL;
 }
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
