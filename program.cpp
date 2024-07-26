@@ -9,6 +9,21 @@
 #include <iostream>
 using namespace std;
 
+//Window Structure
+struct {
+	WNDCLASS wndClass;
+	HWND g_hWnd = NULL;
+	MSG msg;
+} wndStruct;
+
+//Direct3D Structure
+struct {
+	D3DPRESENT_PARAMETERS d3dPP;
+	IDirect3D9* direct3D9 = Direct3DCreate9(D3D_SDK_VERSION);
+	IDirect3DDevice9* d3dDevice;
+} directStruct;
+
+//SpriteSheet Class
 class SpriteSheet
 {
 private:
@@ -67,16 +82,6 @@ public:
 	}
 };
 
-WNDCLASS wndClass;
-HWND g_hWnd = NULL;
-MSG msg;
-
-D3DPRESENT_PARAMETERS d3dPP;
-
-IDirect3D9* direct3D9 = Direct3DCreate9(D3D_SDK_VERSION);
-
-IDirect3DDevice9* d3dDevice;
-
 //pointer to a texture file
 LPDIRECT3DTEXTURE9 bg1 = NULL;
 LPDIRECT3DTEXTURE9 bg2 = NULL;
@@ -88,6 +93,12 @@ LPDIRECT3DTEXTURE9 numTexture = NULL;
 LPD3DXSPRITE sprite = NULL;
 RECT spriteRect;
 RECT numRect;
+
+//Sprite Transformation
+D3DXVECTOR2 spriteCentre;
+D3DXVECTOR2 trans;
+D3DXMATRIX mat;
+D3DXVECTOR2 scaling;
 
 //Screen Resolution
 int screenWidth = 1280;
@@ -250,69 +261,59 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 void createWindow() {
 
-	ZeroMemory(&wndClass, sizeof(wndClass));
+	ZeroMemory(&wndStruct.wndClass, sizeof(wndStruct.wndClass));
 
-	wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wndClass.hInstance = GetModuleHandle(NULL);
-	wndClass.lpfnWndProc = WindowProcedure;
-	wndClass.lpszClassName = "Game Window";
-	wndClass.style = CS_HREDRAW | CS_VREDRAW;
+	wndStruct.wndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndStruct.wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndStruct.wndClass.hInstance = GetModuleHandle(NULL);
+	wndStruct.wndClass.lpfnWndProc = WindowProcedure;
+	wndStruct.wndClass.lpszClassName = "Game Window";
+	wndStruct.wndClass.style = CS_HREDRAW | CS_VREDRAW;
 
-	RegisterClass(&wndClass);
+	RegisterClass(&wndStruct.wndClass);
 
-	g_hWnd = CreateWindowEx(0, wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
+	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 	ShowCursor(false);
-	ShowWindow(g_hWnd, 1);
+	ShowWindow(wndStruct.g_hWnd, 1);
 
 }
 
 bool windowIsRunning() {
 
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	if (PeekMessage(&wndStruct.msg, NULL, 0, 0, PM_REMOVE))
 	{
-		if (msg.message == WM_QUIT)
+		if (wndStruct.msg.message == WM_QUIT)
 			return false;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		TranslateMessage(&wndStruct.msg);
+		DispatchMessage(&wndStruct.msg);
 	}
 	return true;
 }
 
 void cleanupWindow() {
-	UnregisterClass(wndClass.lpszClassName, GetModuleHandle(NULL));
+	UnregisterClass(wndStruct.wndClass.lpszClassName, GetModuleHandle(NULL));
 }
 
 void createDirectX() {
 
-	ZeroMemory(&d3dPP, sizeof(d3dPP));
+	ZeroMemory(&directStruct.d3dPP, sizeof(directStruct.d3dPP));
 
-	d3dPP.Windowed = true;
-	d3dPP.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dPP.BackBufferFormat = D3DFMT_X8R8G8B8;
-	d3dPP.BackBufferCount = 1;
-	d3dPP.BackBufferWidth = screenWidth; 
-	d3dPP.BackBufferHeight = screenHeight; 
-	d3dPP.hDeviceWindow = g_hWnd;
+	directStruct.d3dPP.Windowed = true;
+	directStruct.d3dPP.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	directStruct.d3dPP.BackBufferFormat = D3DFMT_X8R8G8B8;
+	directStruct.d3dPP.BackBufferCount = 1;
+	directStruct.d3dPP.BackBufferWidth = screenWidth;
+	directStruct.d3dPP.BackBufferHeight = screenHeight;
+	directStruct.d3dPP.hDeviceWindow = wndStruct.g_hWnd;
 
-	HRESULT hr = direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dPP, &d3dDevice);
+	HRESULT hr = directStruct.direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, wndStruct.g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &directStruct.d3dPP, &directStruct.d3dDevice);
 
 	if (FAILED(hr))
 		cout << "Creating Directx Failed !!!";
 }
 
-void render() {
-
-	d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
-
-	d3dDevice->BeginScene();
-
+void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
-
-	D3DXVECTOR2 spriteCentre;
-	D3DXVECTOR2 trans;
-	D3DXMATRIX mat;
-	D3DXVECTOR2 scaling;
 
 	//Background
 	spriteCentre = D3DXVECTOR2(256, 256);
@@ -333,7 +334,7 @@ void render() {
 	numRect.bottom = numSprite.getCurrentFrame() / numSprite.getSpriteRow() * numSprite.getSpriteHeight() + numSprite.getSpriteHeight();
 
 	spriteCentre = D3DXVECTOR2(64, 64);
-	trans = D3DXVECTOR2(20, 20);
+	trans = D3DXVECTOR2(30, 30);
 	mat;
 	scaling = D3DXVECTOR2(1, 1);
 
@@ -356,32 +357,41 @@ void render() {
 	sprite->Draw(pointer, NULL, NULL, NULL, D3DCOLOR_XRGB(redPointer, greenPointer, bluePointer));
 
 	sprite->End();
+}
 
-	d3dDevice->EndScene();
+void render() {
 
-	d3dDevice->Present(NULL, NULL, NULL, NULL);
+	directStruct.d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.d3dDevice->BeginScene();
+
+	spriteRender();
+
+	directStruct.d3dDevice->EndScene();
+
+	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
 }
 
 void cleanupDirectX() {
-	d3dDevice->Release();
-	d3dDevice = NULL;
+	directStruct.d3dDevice->Release();
+	directStruct.d3dDevice = NULL;
 }
 
 void createSprite() {
-	HRESULT hr = D3DXCreateSprite(d3dDevice, &sprite);
+	HRESULT hr = D3DXCreateSprite(directStruct.d3dDevice, &sprite);
 
 	if (FAILED(hr)) {
 		cout << "Create Sprite Failed!!!";
 	}
 
-	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg1.png", &bg1);
-	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg2.png", &bg2);
-	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/bg3.png", &bg3);
+	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg1.png", &bg1);
+	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg2.png", &bg2);
+	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/bg3.png", &bg3);
 	currentbg = bg1;
 
-	hr = D3DXCreateTextureFromFile(d3dDevice, "Assets/pointer.png", &pointer);
+	hr = D3DXCreateTextureFromFile(directStruct.d3dDevice, "Assets/pointer.png", &pointer);
 
-	hr = D3DXCreateTextureFromFileEx(d3dDevice, "Assets/numbers.bmp", D3DX_DEFAULT, D3DX_DEFAULT,
+	hr = D3DXCreateTextureFromFileEx(directStruct.d3dDevice, "Assets/numbers.bmp", D3DX_DEFAULT, D3DX_DEFAULT,
 										D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED, 
 										D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(0, 128, 0), 
 										NULL, NULL, &numTexture);
