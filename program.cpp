@@ -1,6 +1,8 @@
 //	Refer to Direct3D 9 documentation for the meaning of the members.
 //https://learn.microsoft.com/en-us/windows/win32/direct3d9/dx9-graphics
 //https://learn.microsoft.com/en-us/windows/win32/api/_direct3d9/
+//try to do clock
+//use radian
 
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -8,6 +10,7 @@
 #include <Windows.h>
 #include <iostream>
 using namespace std;
+
 
 //Window Structure
 struct {
@@ -141,12 +144,12 @@ public:
 	}
 };
 
- //Texture Class
+//Texture Class
 class Texture {
 private:
 	LPDIRECT3DTEXTURE9 texture;
 	LPCTSTR fileLocation = "";
-	int redKey=0, greenKey=0, blueKey=0;
+	int redKey = 0, greenKey = 0, blueKey = 0;
 public:
 	Texture(LPDIRECT3DTEXTURE9 texture, LPCTSTR fileLocation, int redKey, int greenKey, int blueKey) {
 		this->texture = texture;
@@ -192,12 +195,19 @@ Texture explosion(NULL, "Assets/explosion.png");
 LPD3DXSPRITE sprite = NULL;
 RECT spriteRect;
 
+//pointer to font interface
+LPD3DXFONT font = NULL;
+RECT textRect;
+
+//pointer to line interface
+LPD3DXLINE line = NULL;
+
 //Screen Resolution
 int screenWidth = 1280;
 int screenHeight = 720;
 
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
-SpriteSheet numSprite(128,128,4,4,0,16);
+SpriteSheet numSprite(128, 128, 4, 4, 0, 16);
 SpriteSheet explosionSprite(2048, 2048, 8, 8, 0, 64);
 
 // x and y position of the mouse
@@ -220,6 +230,11 @@ int greenPointer = 255;
 int bluePointer = 255;
 
 int seq;
+
+double secDegree = 270;
+double minDegree = 270;
+double hrDegree = 270;
+bool hrBegin = false;
 
 void changeCursorColor() {
 	switch (seq) {
@@ -422,6 +437,12 @@ void spriteRender() {
 	spriteRect.top = 0;
 	spriteRect.bottom = 300;
 
+	//Text
+	textRect.left = 100;
+	textRect.top = 100;
+	textRect.right = 300;
+	textRect.bottom = 125;
+
 	bgTrans.transform();
 
 	sprite->SetTransform(&bgTrans.getMat());
@@ -449,8 +470,55 @@ void spriteRender() {
 
 	sprite->Draw(explosion.getTexture(), &explosionSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
+	//Draw Font
+	font->DrawText(sprite, "Hello World!",-1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
 	sprite->End();
 }
+
+void lineRender() {
+	//Rendering clock
+	if (secDegree >= 360) {
+		secDegree = 0;
+	}
+	if (minDegree >= 360) {
+		minDegree = 0;
+		hrBegin = true;
+	}
+	if (hrDegree >= 360) {
+		hrDegree = 0;
+	}
+	secDegree++;
+	double secRad = 3.142 / 180 * secDegree;
+	double minRad = 3.142 / 180 * minDegree;
+	double hrRad = 3.142 / 180 * hrDegree;
+
+	double secX = cos(secRad) * sqrt(pow(100, 2) + pow(100, 2)) + 200;
+	double secY = sin(secRad) * sqrt(pow(100, 2) + pow(100, 2)) + 200;
+	double minX = cos(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
+	double minY = sin(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
+	double hrX = cos(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
+	double hrY = sin(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
+	//Draw Line
+	D3DXVECTOR2 secLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(secX,secY) };
+	D3DXVECTOR2 minLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(minX,minY) };
+	D3DXVECTOR2 hrLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(hrX,hrY) };
+
+	line->Begin();
+	line->Draw(secLineVertices, 2, D3DCOLOR_XRGB(255, 0, 0));
+	line->Draw(minLineVertices, 2, D3DCOLOR_XRGB(0, 255, 0));
+	line->Draw(hrLineVertices, 2, D3DCOLOR_XRGB(0, 0, 255));
+
+	line->End();
+	if (secDegree == 270) {
+		minDegree += 10;
+	}
+	if (minDegree == 270 && hrBegin) {
+		hrDegree += 10;
+		hrBegin = false;
+	}
+}
+
 
 void render() {
 
@@ -459,6 +527,8 @@ void render() {
 	directStruct.d3dDevice->BeginScene();
 
 	spriteRender();
+
+	lineRender();
 
 	directStruct.d3dDevice->EndScene();
 
@@ -477,6 +547,20 @@ void createSprite() {
 		cout << "Create Sprite Failed!!!";
 	}
 
+	hr = D3DXCreateFont(directStruct.d3dDevice, 25, 0, 0, 1, false,
+		DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS, DEFAULT_QUALITY,
+		DEFAULT_PITCH | FF_DONTCARE, "Arial", &font);
+
+	if (FAILED(hr)) {
+		cout << "Create Font Failed!!!";
+	}
+
+	hr = D3DXCreateLine(directStruct.d3dDevice, &line);
+
+	if (FAILED(hr)) {
+		cout << "Create Line Failed!!!";
+	}
+
 	hr = bg1.createTextureFromFile();
 	hr = bg2.createTextureFromFile();
 	hr = bg3.createTextureFromFile();
@@ -490,7 +574,10 @@ void createSprite() {
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
 	}
+
+
 }
+
 
 void cleanupSprite() {
 	sprite->Release();
@@ -507,10 +594,17 @@ void cleanupSprite() {
 
 	explosion.getTexture()->Release();
 	explosion = NULL;
+
+	font->Release();
+	font = NULL;
+
+	line->Release();
+	line = NULL;
 }
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
+
 	createWindow();
 
 	createDirectX();
