@@ -492,22 +492,36 @@ void lineRender() {
 	double secRad = 3.142 / 180 * secDegree;
 	double minRad = 3.142 / 180 * minDegree;
 	double hrRad = 3.142 / 180 * hrDegree;
+	double measurement = 3.142 / 180 * (360 / 12);
 
-	double secX = cos(secRad) * sqrt(pow(100, 2) + pow(100, 2)) + 200;
-	double secY = sin(secRad) * sqrt(pow(100, 2) + pow(100, 2)) + 200;
+	double secX = cos(secRad) * sqrt(pow(80, 2) + pow(80, 2)) + 200;
+	double secY = sin(secRad) * sqrt(pow(80, 2) + pow(80, 2)) + 200;
 	double minX = cos(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
 	double minY = sin(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
 	double hrX = cos(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
 	double hrY = sin(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
+	for (int i = 0; i < 12; i++) {
+		double measureXCenter = cos(measurement * i) * sqrt(pow(90, 2) + pow(90, 2)) + 200;
+		double measureYCenter = sin(measurement * i) * sqrt(pow(90, 2) + pow(90, 2)) + 200;
+
+		double measureX = cos(measurement * i) * sqrt(pow(20, 2) + pow(20, 2)) + measureXCenter;
+		double measureY = sin(measurement * i) * sqrt(pow(20, 2) + pow(20, 2)) + measureYCenter;
+		D3DXVECTOR2 measureLineVertices[] = { D3DXVECTOR2(measureXCenter, measureYCenter), D3DXVECTOR2(measureX, measureY) };
+		line->Begin();
+		line->Draw(measureLineVertices, 2, D3DCOLOR_XRGB(0, 0, 0));
+		line->End();
+	}
 	//Draw Line
 	D3DXVECTOR2 secLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(secX,secY) };
 	D3DXVECTOR2 minLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(minX,minY) };
 	D3DXVECTOR2 hrLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(hrX,hrY) };
 
+
 	line->Begin();
 	line->Draw(secLineVertices, 2, D3DCOLOR_XRGB(255, 0, 0));
 	line->Draw(minLineVertices, 2, D3DCOLOR_XRGB(0, 255, 0));
 	line->Draw(hrLineVertices, 2, D3DCOLOR_XRGB(0, 0, 255));
+
 
 	line->End();
 	if (secDegree == 270) {
