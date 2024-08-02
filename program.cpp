@@ -231,9 +231,22 @@ int bluePointer = 255;
 
 int seq;
 
+//Starting point for the line
 double secDegree = 270;
 double minDegree = 270;
 double hrDegree = 270;
+//Radius for the circle
+double secRadius = 110;
+double minRadius = 80;
+double hrRadius = 50;
+//Circle center value
+double circleXCenter = 500;
+double circleYCenter = 500;
+//Clock measurement gap between the secLine
+double measureGap = 30;
+//Clock measurement length
+double measureLength = 20;
+//Clock validation
 bool hrBegin = false;
 
 void changeCursorColor() {
@@ -494,27 +507,27 @@ void lineRender() {
 	double hrRad = 3.142 / 180 * hrDegree;
 	double measurement = 3.142 / 180 * (360 / 12);
 
-	double secX = cos(secRad) * sqrt(pow(80, 2) + pow(80, 2)) + 200;
-	double secY = sin(secRad) * sqrt(pow(80, 2) + pow(80, 2)) + 200;
-	double minX = cos(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
-	double minY = sin(minRad) * sqrt(pow(50, 2) + pow(50, 2)) + 200;
-	double hrX = cos(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
-	double hrY = sin(hrRad) * sqrt(pow(30, 2) + pow(30, 2)) + 200;
+	double secX = cos(secRad) * secRadius + circleXCenter;
+	double secY = sin(secRad) * secRadius + circleYCenter;
+	double minX = cos(minRad) * minRadius + circleXCenter;
+	double minY = sin(minRad) * minRadius + circleYCenter;
+	double hrX = cos(hrRad) * hrRadius + circleXCenter;
+	double hrY = sin(hrRad) * hrRadius + circleYCenter;
 	for (int i = 0; i < 12; i++) {
-		double measureXCenter = cos(measurement * i) * sqrt(pow(90, 2) + pow(90, 2)) + 200;
-		double measureYCenter = sin(measurement * i) * sqrt(pow(90, 2) + pow(90, 2)) + 200;
+		double measureXCenter = cos(measurement * i) * (secRadius + measureGap) + circleXCenter;
+		double measureYCenter = sin(measurement * i) * (secRadius + measureGap) + circleYCenter;
 
-		double measureX = cos(measurement * i) * sqrt(pow(20, 2) + pow(20, 2)) + measureXCenter;
-		double measureY = sin(measurement * i) * sqrt(pow(20, 2) + pow(20, 2)) + measureYCenter;
+		double measureX = cos(measurement * i) * measureLength + measureXCenter;
+		double measureY = sin(measurement * i) * measureLength + measureYCenter;
 		D3DXVECTOR2 measureLineVertices[] = { D3DXVECTOR2(measureXCenter, measureYCenter), D3DXVECTOR2(measureX, measureY) };
 		line->Begin();
 		line->Draw(measureLineVertices, 2, D3DCOLOR_XRGB(0, 0, 0));
 		line->End();
 	}
 	//Draw Line
-	D3DXVECTOR2 secLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(secX,secY) };
-	D3DXVECTOR2 minLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(minX,minY) };
-	D3DXVECTOR2 hrLineVertices[] = { D3DXVECTOR2(200,200), D3DXVECTOR2(hrX,hrY) };
+	D3DXVECTOR2 secLineVertices[] = { D3DXVECTOR2(circleXCenter,circleYCenter), D3DXVECTOR2(secX,secY) };
+	D3DXVECTOR2 minLineVertices[] = { D3DXVECTOR2(circleXCenter,circleYCenter), D3DXVECTOR2(minX,minY) };
+	D3DXVECTOR2 hrLineVertices[] = { D3DXVECTOR2(circleXCenter,circleYCenter), D3DXVECTOR2(hrX,hrY) };
 
 
 	line->Begin();
