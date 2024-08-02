@@ -9,6 +9,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
+#define PI 3.142
 using namespace std;
 
 
@@ -502,10 +503,10 @@ void lineRender() {
 		hrDegree = 0;
 	}
 	secDegree++;
-	double secRad = 3.142 / 180 * secDegree;
-	double minRad = 3.142 / 180 * minDegree;
-	double hrRad = 3.142 / 180 * hrDegree;
-	double measurement = 3.142 / 180 * (360 / 12);
+	double secRad = PI / 180 * secDegree;
+	double minRad = PI / 180 * minDegree;
+	double hrRad = PI / 180 * hrDegree;
+	double measurement = PI / 180 * (360 / 12);
 
 	double secX = cos(secRad) * secRadius + circleXCenter;
 	double secY = sin(secRad) * secRadius + circleYCenter;
