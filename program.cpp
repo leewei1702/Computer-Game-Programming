@@ -94,9 +94,9 @@ public:
 	}
 	RECT& crop() {
 		spriteRect.left = currentFrame % spriteCol * spriteWidth;
-		spriteRect.right = currentFrame % spriteCol * spriteWidth + spriteWidth;
+		spriteRect.right = spriteRect.left + spriteWidth;
 		spriteRect.top = currentFrame % maxFrame / spriteRow * spriteHeight;
-		spriteRect.bottom = currentFrame % maxFrame / spriteRow * spriteHeight + spriteHeight;
+		spriteRect.bottom = spriteRect.top + spriteHeight;
 		return spriteRect;
 	}
 };
