@@ -1,8 +1,6 @@
 //	Refer to Direct3D 9 documentation for the meaning of the members.
 //https://learn.microsoft.com/en-us/windows/win32/direct3d9/dx9-graphics
 //https://learn.microsoft.com/en-us/windows/win32/api/_direct3d9/
-//try to do clock
-//use radian
 
 #include <d3d9.h>
 #include <d3dx9.h>
@@ -87,9 +85,6 @@ public:
 	}
 	void nextFrame() {
 		currentFrame++;
-		if (currentFrame >= maxFrame) {
-			currentFrame = 0;
-		}
 	}
 	void prevFrame() {
 		currentFrame--;
@@ -100,8 +95,8 @@ public:
 	RECT& crop() {
 		spriteRect.left = currentFrame % spriteCol * spriteWidth;
 		spriteRect.right = currentFrame % spriteCol * spriteWidth + spriteWidth;
-		spriteRect.top = currentFrame / spriteRow * spriteHeight;
-		spriteRect.bottom = currentFrame / spriteRow * spriteHeight + spriteHeight;
+		spriteRect.top = currentFrame % maxFrame / spriteRow * spriteHeight;
+		spriteRect.bottom = currentFrame % maxFrame / spriteRow * spriteHeight + spriteHeight;
 		return spriteRect;
 	}
 };
