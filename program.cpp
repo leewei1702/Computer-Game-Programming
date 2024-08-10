@@ -9,7 +9,10 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
+#include <dinput.h>
+#include <string>
 #define PI 3.142
+
 using namespace std;
 
 
@@ -250,6 +253,18 @@ double measureLength = 20;
 //Clock validation
 bool hrBegin = false;
 
+//Input 
+LPDIRECTINPUT8 dInput;
+LPDIRECTINPUTDEVICE8  dInputKeyboardDevice;
+LPDIRECTINPUTDEVICE8 dInputMouseDevice;
+DIMOUSESTATE mouseState;
+
+LONG currentXpos = 500;
+LONG currentYpos = 500;
+
+//	Key input buffer
+BYTE  diKeys[256];
+
 void changeCursorColor() {
 	switch (seq) {
 	case 1:
@@ -287,96 +302,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
-	case WM_KEYDOWN:
-
-		switch (wParam)
-		{
-			//Press ESC key to exit the program
-		case VK_ESCAPE:
-			PostQuitMessage(0);
-			break;
-			//Press X key to exit the program
-		case 'x':
-		case 'X':
-			PostQuitMessage(0);
-			break;
-			//Press R to increment/decrement red color
-		case 'R':
-		case 'r':
-			red += redInc;
-			if (red <= 0 || red >= 255) {
-				redInc *= -1;
-			}
-			if (red > 255 || red < 0) {
-				red += redInc + redInc;
-			}
-			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-			break;
-			//Press G to increment/decrement green color
-		case 'G':
-		case 'g':
-			green += greenInc;
-			if (green <= 0 || green >= 255) {
-				greenInc *= -1;
-			}
-			if (green > 255 || green < 0) {
-				green += greenInc + greenInc;
-			}
-			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-			break;
-			//Press B to increment/decrement blue color
-		case 'B':
-		case 'b':
-			blue += blueInc;
-			if (blue <= 0 || blue >= 255) {
-				blueInc *= -1;
-			}
-			if (blue > 255 || blue < 0) {
-				blue += blueInc + blueInc;
-			}
-			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-			break;
-			// Swapping background
-		case '1':
-			currentbg = bg1;
-			break;
-		case '2':
-			currentbg = bg2;
-			break;
-		case '3':
-			currentbg = bg3;
-			break;
-			// <-/-> change the color of cursor
-		case VK_LEFT:
-			seq++;
-			if (seq > 4) {
-				seq = 0;
-			}
-			changeCursorColor();
-			break;
-		case VK_RIGHT:
-			seq--;
-			if (seq < 0) {
-				seq = 4;
-			}
-			changeCursorColor();
-			break;
-		case VK_UP:
-			numSprite.nextFrame();
-			explosionSprite.nextFrame();
-			break;
-		case VK_DOWN:
-			numSprite.prevFrame();
-			explosionSprite.prevFrame();
-			break;
-		}
-		break;
-	case WM_MOUSEMOVE:
-	{
-		x = (short)LOWORD(lParam);
-		y = (short)HIWORD(lParam);
-	}
-	break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -442,8 +367,9 @@ void spriteRender() {
 	//Sprite Transform Object - (Center, Translation, Scaling)
 	SpriteTransform bgTrans(D3DXVECTOR2(256, 256), D3DXVECTOR2(0, 0), D3DXVECTOR2(3.2, 2.4));
 	SpriteTransform numTrans(D3DXVECTOR2(64, 64), D3DXVECTOR2(30, 30), D3DXVECTOR2(1, 1));
-	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(x, y), D3DXVECTOR2(1, 1));
+	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(currentXpos, currentYpos), D3DXVECTOR2(1, 1));
 	SpriteTransform explosionTrans(D3DXVECTOR2(1024, 1024), D3DXVECTOR2(200, 200), D3DXVECTOR2(1, 1));
+	SpriteTransform textTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(800, 100), D3DXVECTOR2(1, 1));
 
 	//Background
 	spriteRect.left = 0;
@@ -485,7 +411,10 @@ void spriteRender() {
 	sprite->Draw(explosion.getTexture(), &explosionSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Draw Font
-	font->DrawText(sprite, "Hello World!",-1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	textTrans.transform();
+
+	sprite->SetTransform(&textTrans.getMat());
+	font->DrawText(sprite, "Hello World!", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	sprite->End();
 }
@@ -546,7 +475,6 @@ void lineRender() {
 		hrBegin = false;
 	}
 }
-
 
 void render() {
 
@@ -630,6 +558,151 @@ void cleanupSprite() {
 	line = NULL;
 }
 
+void createDirectInput() {
+	//	Create the Direct Input object.
+	HRESULT hr = DirectInput8Create(GetModuleHandle(NULL), 0x0800, IID_IDirectInput8, (void**)&dInput, NULL);
+
+	//	Create the keyboard device.
+	hr = dInput->CreateDevice(GUID_SysKeyboard, &dInputKeyboardDevice, NULL);
+
+	//	Set the input data format.
+	dInputKeyboardDevice->SetDataFormat(&c_dfDIKeyboard);
+
+	//	Set the cooperative level.
+	//	To Do:
+	//	Try with different combination.
+	dInputKeyboardDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+
+	// Create the mouse device
+	hr = dInput->CreateDevice(GUID_SysMouse, &dInputMouseDevice, NULL);
+
+	// Set the input data format
+	dInputMouseDevice->SetDataFormat(&c_dfDIMouse);
+
+	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+}
+
+void getInput() {
+	dInputKeyboardDevice->Acquire();
+	dInputMouseDevice->Acquire();
+	dInputKeyboardDevice->GetDeviceState(256, diKeys);
+
+	dInputMouseDevice->GetDeviceState(sizeof(mouseState), (LPVOID)&mouseState);
+}
+
+void update() {
+	if (diKeys[DIK_ESCAPE] & 0x80) {
+		PostQuitMessage(0);
+	}
+	// Sprite animation
+	if (diKeys[DIK_UP] & 0x80)
+	{
+		cout << "UP" << endl;
+		numSprite.nextFrame();
+		explosionSprite.nextFrame();
+	}
+	if (diKeys[DIK_DOWN] & 0x80) {
+		cout << "DOWN" << endl;
+		numSprite.prevFrame();
+		explosionSprite.prevFrame();
+	}
+	// Change background
+	if (diKeys[DIK_1] & 0x80) {
+		currentbg = bg1;
+	}
+	if (diKeys[DIK_2] & 0x80) {
+		currentbg = bg2;
+	}
+	if (diKeys[DIK_3] & 0x80) {
+		currentbg = bg3;
+	}
+	// Change cursor color
+	if (diKeys[DIK_LEFT] & 0x80) {
+		seq++;
+		if (seq > 4) {
+			seq = 0;
+		}
+		changeCursorColor();
+	}
+	if (diKeys[DIK_RIGHT] & 0x80) {
+		seq--;
+		if (seq < 0) {
+			seq = 4;
+		}
+		changeCursorColor();
+	}
+	//Press R to increment/decrement red color
+	if (diKeys[DIK_R] & 0x80) {
+		red += redInc;
+		if (red <= 0 || red >= 255) {
+			redInc *= -1;
+		}
+		if (red > 255 || red < 0) {
+			red += redInc + redInc;
+		}
+		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+	}
+	//Press G to increment/decrement green color
+	if (diKeys[DIK_G] & 0x80) {
+		green += greenInc;
+		if (green <= 0 || green >= 255) {
+			greenInc *= -1;
+		}
+		if (green > 255 || green < 0) {
+			green += greenInc + greenInc;
+		}
+		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+	}
+	//Press B to increment/decrement blue color
+	if (diKeys[DIK_B] & 0x80) {
+		blue += blueInc;
+		if (blue <= 0 || blue >= 255) {
+			blueInc *= -1;
+		}
+		if (blue > 255 || blue < 0) {
+			blue += blueInc + blueInc;
+		}
+		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+	}
+	//Left click
+	if (mouseState.rgbButtons[0] & 0x80) {
+		// do something
+	}
+	//Right click
+	if (mouseState.rgbButtons[1] & 0x80) {
+		//do something
+	}
+	//Mouse position
+	if (currentYpos >= 0 || currentYpos <= screenHeight) {
+		currentYpos += mouseState.lY;
+	}
+	if (currentYpos < 0 || currentYpos > screenHeight) {
+		currentYpos -= mouseState.lY;
+	}
+	if (currentXpos >= 0 || currentXpos <= screenWidth) {
+		currentXpos += mouseState.lX;
+	}
+	if (currentXpos < 0 || currentXpos > screenWidth) {
+		currentXpos -= mouseState.lX;
+	}
+}
+
+void cleanupInput() {
+	//	Release keyboard device.
+	dInputKeyboardDevice->Unacquire();
+	dInputKeyboardDevice->Release();
+	dInputKeyboardDevice = NULL;
+
+	//	Release mouse device.
+	dInputMouseDevice->Unacquire();
+	dInputMouseDevice->Release();
+	dInputMouseDevice = NULL;
+
+	//	Release DirectInput.
+	dInput->Release();
+	dInput = NULL;
+}
+
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 
@@ -639,9 +712,15 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	createSprite();
 
+	createDirectInput();
+
 	while (windowIsRunning())
 	{
+		getInput();
+		//Physics();
+		update();
 		render();
+		//Sound();
 
 	}
 
@@ -650,6 +729,8 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	cleanupDirectX();
 
 	cleanupWindow();
+
+	cleanupInput();
 
 	return 0;
 }
