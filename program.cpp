@@ -4,15 +4,14 @@
 
 #include <d3d9.h>
 #include <d3dx9.h>
-#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <iostream>
 #include <dinput.h>
 #include <string>
+#define WIN32_LEAN_AND_MEAN
 #define PI 3.142
 
 using namespace std;
-
 
 //Window Structure
 struct {
@@ -256,6 +255,9 @@ DIMOUSESTATE mouseState;
 
 LONG currentXpos = 500;
 LONG currentYpos = 500;
+string strCurrentXpos;
+string strCurrentYpos;
+char posText[9];
 
 //	Key input buffer
 BYTE  diKeys[256];
@@ -409,8 +411,21 @@ void spriteRender() {
 	textTrans.transform();
 
 	sprite->SetTransform(&textTrans.getMat());
-	font->DrawText(sprite, "Hello World!", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	strCurrentXpos = to_string(currentXpos);
+	strCurrentYpos = to_string(currentYpos);
+	for (int i = 0; i < strCurrentXpos.length(); i++) {
+		posText[i] = strCurrentXpos[i];
+	}
+	posText[4] = ',';
+	for (int i = 0; i < strCurrentYpos.length(); i++) {
+		posText[i + 5] = strCurrentYpos[i];
+	}
 
+	font->DrawText(sprite, posText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	for (int i = 0; i < sizeof(posText); i++) {
+		posText[i] = ' ';
+	}
 	sprite->End();
 }
 
