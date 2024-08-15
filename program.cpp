@@ -8,10 +8,12 @@
 #include <iostream>
 #include <dinput.h>
 #include <string>
+#include "FrameTimer.h"
 #define WIN32_LEAN_AND_MEAN
 #define PI 3.142
 
 using namespace std;
+enum movement { MOVEDOWN, MOVEUP, MOVELEFT, MOVERIGHT };
 
 //Window Structure
 struct {
@@ -40,6 +42,7 @@ private:
 	int currentFrame;
 	int maxFrame;
 	RECT spriteRect;
+	int currentMovement = NULL;
 
 public:
 	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight, int spriteRow, int spriteCol, int currentFrame, int maxFrame)
@@ -56,7 +59,6 @@ public:
 		spriteRect.right = 0;
 		spriteRect.top = 0;
 		spriteRect.bottom = 0;
-
 	}
 	int getTotalSpriteWidth() {
 		return totalSpriteWidth;
@@ -82,6 +84,12 @@ public:
 	int getSpriteHeight() {
 		return spriteHeight;
 	}
+	int getCurrentMovement() {
+		return currentMovement;
+	}
+	void setCurrentMovement(int currentMovement) {
+		this->currentMovement = currentMovement;
+	}
 	void nextFrame() {
 		currentFrame++;
 	}
@@ -95,6 +103,13 @@ public:
 		spriteRect.left = currentFrame % spriteCol * spriteWidth;
 		spriteRect.right = spriteRect.left + spriteWidth;
 		spriteRect.top = currentFrame % maxFrame / spriteRow * spriteHeight;
+		spriteRect.bottom = spriteRect.top + spriteHeight;
+		return spriteRect;
+	}
+	RECT& movementCrop() {
+		spriteRect.left = currentFrame % spriteCol * spriteWidth;
+		spriteRect.right = spriteRect.left + spriteWidth;
+		spriteRect.top = currentMovement * spriteHeight;
 		spriteRect.bottom = spriteRect.top + spriteHeight;
 		return spriteRect;
 	}
@@ -188,6 +203,7 @@ Texture currentbg(NULL);
 Texture pointer(NULL, "Assets/pointer.png");
 Texture numTexture(NULL, "Assets/numbers.bmp", 0, 128, 0);
 Texture explosion(NULL, "Assets/explosion.png");
+Texture orc(NULL, "Assets/orc.png");
 
 //pointer to a sprite interface 
 LPD3DXSPRITE sprite = NULL;
@@ -207,6 +223,7 @@ int screenHeight = 720;
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 SpriteSheet numSprite(128, 128, 4, 4, 0, 16);
 SpriteSheet explosionSprite(2048, 2048, 8, 8, 0, 64);
+SpriteSheet orcSprite(512, 256, 4, 8, 0, 16);
 
 // x and y position of the mouse
 int x;
@@ -262,6 +279,16 @@ char posText[9];
 //	Key input buffer
 BYTE  diKeys[256];
 
+FrameTimer *gameTimer = new FrameTimer();
+
+int walkX = 900;
+int walkY = 400;
+
+int movementSpeedMultiplier = 1;
+string strMovementSpeed;
+string strMovementSpeedDisplay = "Current Movement Speed: ";
+char movementSpeedText[30];
+
 void changeCursorColor() {
 	switch (seq) {
 	case 1:
@@ -299,6 +326,20 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_KEYDOWN:
+		switch (wParam)
+		{
+		case VK_ADD:
+			movementSpeedMultiplier++;
+			break;
+		case VK_SUBTRACT:
+			if (movementSpeedMultiplier > 1) {
+				movementSpeedMultiplier--;
+			}
+			break;
+		default:
+			break;
+		}
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -367,7 +408,8 @@ void spriteRender() {
 	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(currentXpos, currentYpos), D3DXVECTOR2(1, 1));
 	SpriteTransform explosionTrans(D3DXVECTOR2(1024, 1024), D3DXVECTOR2(200, 200), D3DXVECTOR2(1, 1));
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(800, 100), D3DXVECTOR2(1, 1));
-
+	SpriteTransform movementSpeedTextTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(960, 35), D3DXVECTOR2(1, 1));
+	SpriteTransform orcTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(walkX, walkY), D3DXVECTOR2(3, 3));
 	//Background
 	spriteRect.left = 0;
 	spriteRect.right = 400;
@@ -375,8 +417,8 @@ void spriteRender() {
 	spriteRect.bottom = 300;
 
 	//Text
-	textRect.left = 100;
-	textRect.top = 100;
+	textRect.left = 0;
+	textRect.top = 0;
 	textRect.right = 300;
 	textRect.bottom = 125;
 
@@ -407,7 +449,14 @@ void spriteRender() {
 
 	sprite->Draw(explosion.getTexture(), &explosionSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
-	//Draw Font
+	//Orc
+	orcTrans.transform();
+
+	sprite->SetTransform(&orcTrans.getMat());
+
+	sprite->Draw(orc.getTexture(), &orcSprite.movementCrop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	//Draw Mouse Position Font
 	textTrans.transform();
 
 	sprite->SetTransform(&textTrans.getMat());
@@ -426,6 +475,21 @@ void spriteRender() {
 	for (int i = 0; i < sizeof(posText); i++) {
 		posText[i] = ' ';
 	}
+	//Draw Movement Speed Font
+	movementSpeedTextTrans.transform();
+	sprite->SetTransform(&movementSpeedTextTrans.getMat());
+	strMovementSpeed = to_string(movementSpeedMultiplier);
+	strMovementSpeedDisplay = "Current Movement Speed: ";
+	strMovementSpeedDisplay.append(strMovementSpeed);
+	for (int i = 0; i < strMovementSpeedDisplay.length(); i++) {
+		movementSpeedText[i] = strMovementSpeedDisplay[i];
+	}
+	font->DrawText(sprite, movementSpeedText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	for (int i = 0; i < sizeof(movementSpeedText); i++) {
+		movementSpeedText[i] = ' ';
+	}
+
 	sprite->End();
 }
 
@@ -534,16 +598,14 @@ void createSprite() {
 
 	hr = pointer.createTextureFromFile();
 	hr = explosion.createTextureFromFile();
-
+	hr = orc.createTextureFromFile();
 	hr = numTexture.createTextureFromFileEx();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
 	}
 
-
 }
-
 
 void cleanupSprite() {
 	sprite->Release();
@@ -560,6 +622,9 @@ void cleanupSprite() {
 
 	explosion.getTexture()->Release();
 	explosion = NULL;
+
+	orc.getTexture()->Release();
+	orc = NULL;
 
 	font->Release();
 	font = NULL;
@@ -600,22 +665,93 @@ void getInput() {
 	dInputMouseDevice->GetDeviceState(sizeof(mouseState), (LPVOID)&mouseState);
 }
 
-void update() {
+void update(int frames) {
+	for (int i = 0; i < frames; i++) 
+	{
+		// Change cursor color
+		if (diKeys[DIK_LEFT] & 0x80) {
+			seq++;
+			if (seq > 4) {
+				seq = 0;
+			}
+			changeCursorColor();
+		}
+		if (diKeys[DIK_RIGHT] & 0x80) {
+			seq--;
+			if (seq < 0) {
+				seq = 4;
+			}
+			changeCursorColor();
+		}
+		//Press R to increment/decrement red color
+		if (diKeys[DIK_R] & 0x80) {
+			red += redInc;
+			if (red <= 0 || red >= 255) {
+				redInc *= -1;
+			}
+			if (red > 255 || red < 0) {
+				red += redInc + redInc;
+			}
+			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+		}
+		//Press G to increment/decrement green color
+		if (diKeys[DIK_G] & 0x80) {
+			green += greenInc;
+			if (green <= 0 || green >= 255) {
+				greenInc *= -1;
+			}
+			if (green > 255 || green < 0) {
+				green += greenInc + greenInc;
+			}
+			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+		}
+		//Press B to increment/decrement blue color
+		if (diKeys[DIK_B] & 0x80) {
+			blue += blueInc;
+			if (blue <= 0 || blue >= 255) {
+				blueInc *= -1;
+			}
+			if (blue > 255 || blue < 0) {
+				blue += blueInc + blueInc;
+			}
+			cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
+		}
+		// Sprite animation
+		if (diKeys[DIK_UP] & 0x80)
+		{
+			numSprite.nextFrame();
+			explosionSprite.nextFrame();
+		}
+		if (diKeys[DIK_DOWN] & 0x80) {
+			numSprite.prevFrame();
+			explosionSprite.prevFrame();
+		}
+		if (diKeys[DIK_W] & 0x80) {
+			orcSprite.setCurrentMovement(MOVEUP);
+			orcSprite.nextFrame();
+			walkY-=movementSpeedMultiplier;
+		}
+		if (diKeys[DIK_A] & 0x80) {
+			orcSprite.setCurrentMovement(MOVELEFT);
+			orcSprite.nextFrame();
+			walkX-= movementSpeedMultiplier;
+		}
+		if (diKeys[DIK_S] & 0x80) {
+			orcSprite.setCurrentMovement(MOVEDOWN);
+			orcSprite.nextFrame();
+			walkY+= movementSpeedMultiplier;
+		}
+		if (diKeys[DIK_D] & 0x80) {
+			orcSprite.setCurrentMovement(MOVERIGHT);
+			orcSprite.nextFrame();
+			walkX+= movementSpeedMultiplier;
+		}
+	}
+
 	if (diKeys[DIK_ESCAPE] & 0x80) {
 		PostQuitMessage(0);
 	}
-	// Sprite animation
-	if (diKeys[DIK_UP] & 0x80)
-	{
-		cout << "UP" << endl;
-		numSprite.nextFrame();
-		explosionSprite.nextFrame();
-	}
-	if (diKeys[DIK_DOWN] & 0x80) {
-		cout << "DOWN" << endl;
-		numSprite.prevFrame();
-		explosionSprite.prevFrame();
-	}
+
 	// Change background
 	if (diKeys[DIK_1] & 0x80) {
 		currentbg = bg1;
@@ -626,54 +762,7 @@ void update() {
 	if (diKeys[DIK_3] & 0x80) {
 		currentbg = bg3;
 	}
-	// Change cursor color
-	if (diKeys[DIK_LEFT] & 0x80) {
-		seq++;
-		if (seq > 4) {
-			seq = 0;
-		}
-		changeCursorColor();
-	}
-	if (diKeys[DIK_RIGHT] & 0x80) {
-		seq--;
-		if (seq < 0) {
-			seq = 4;
-		}
-		changeCursorColor();
-	}
-	//Press R to increment/decrement red color
-	if (diKeys[DIK_R] & 0x80) {
-		red += redInc;
-		if (red <= 0 || red >= 255) {
-			redInc *= -1;
-		}
-		if (red > 255 || red < 0) {
-			red += redInc + redInc;
-		}
-		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-	}
-	//Press G to increment/decrement green color
-	if (diKeys[DIK_G] & 0x80) {
-		green += greenInc;
-		if (green <= 0 || green >= 255) {
-			greenInc *= -1;
-		}
-		if (green > 255 || green < 0) {
-			green += greenInc + greenInc;
-		}
-		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-	}
-	//Press B to increment/decrement blue color
-	if (diKeys[DIK_B] & 0x80) {
-		blue += blueInc;
-		if (blue <= 0 || blue >= 255) {
-			blueInc *= -1;
-		}
-		if (blue > 255 || blue < 0) {
-			blue += blueInc + blueInc;
-		}
-		cout << "RGB(" << red << ", " << green << ", " << blue << ")" << endl;
-	}
+
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
 		// do something
@@ -715,6 +804,7 @@ void cleanupInput() {
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
+	gameTimer->init(30);
 
 	createWindow();
 
@@ -728,7 +818,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	{
 		getInput();
 		//Physics();
-		update();
+		update(gameTimer->FramesToUpdate());
 		render();
 		//Sound();
 
