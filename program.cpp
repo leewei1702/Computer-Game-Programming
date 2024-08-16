@@ -33,14 +33,14 @@ struct {
 class SpriteSheet
 {
 private:
-	int totalSpriteWidth;
-	int totalSpriteHeight;
-	int spriteWidth;
-	int spriteHeight;
-	int spriteRow;
-	int spriteCol;
-	int currentFrame;
-	int maxFrame;
+	int totalSpriteWidth = NULL;
+	int totalSpriteHeight = NULL;
+	int spriteWidth = NULL;
+	int spriteHeight = NULL;
+	int spriteRow = NULL;
+	int spriteCol = NULL;
+	int currentFrame = NULL;
+	int maxFrame = NULL;
 	RECT spriteRect;
 	int currentMovement = NULL;
 
@@ -59,6 +59,12 @@ public:
 		spriteRect.right = 0;
 		spriteRect.top = 0;
 		spriteRect.bottom = 0;
+	}
+	SpriteSheet(int spriteRectLeft, int spriteRectRight, int spriteRectTop, int spriteRectBottom) {
+		spriteRect.left = spriteRectLeft;
+		spriteRect.right = spriteRectRight;
+		spriteRect.top = spriteRectTop;
+		spriteRect.bottom = spriteRectBottom;
 	}
 	int getTotalSpriteWidth() {
 		return totalSpriteWidth;
@@ -87,6 +93,9 @@ public:
 	int getCurrentMovement() {
 		return currentMovement;
 	}
+	RECT& getRect() {
+		return spriteRect;
+	}
 	void setCurrentMovement(int currentMovement) {
 		this->currentMovement = currentMovement;
 	}
@@ -113,6 +122,7 @@ public:
 		spriteRect.bottom = spriteRect.top + spriteHeight;
 		return spriteRect;
 	}
+
 };
 
 //Sprite Transformation Class
@@ -207,7 +217,6 @@ Texture orc(NULL, "Assets/orc.png");
 
 //pointer to a sprite interface 
 LPD3DXSPRITE sprite = NULL;
-RECT spriteRect;
 
 //pointer to font interface
 LPD3DXFONT font = NULL;
@@ -221,13 +230,11 @@ int screenWidth = 1280;
 int screenHeight = 720;
 
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
+//                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
 SpriteSheet numSprite(128, 128, 4, 4, 0, 16);
 SpriteSheet explosionSprite(2048, 2048, 8, 8, 0, 64);
 SpriteSheet orcSprite(512, 256, 4, 8, 0, 16);
-
-// x and y position of the mouse
-int x;
-int y;
+SpriteSheet bgSprite(0, 400, 0, 300);
 
 //Default value for rgb color
 int red = 0;
@@ -270,6 +277,7 @@ LPDIRECTINPUTDEVICE8  dInputKeyboardDevice;
 LPDIRECTINPUTDEVICE8 dInputMouseDevice;
 DIMOUSESTATE mouseState;
 
+//Default position for mouse
 LONG currentXpos = 500;
 LONG currentYpos = 500;
 string strCurrentXpos;
@@ -279,8 +287,9 @@ char posText[9];
 //	Key input buffer
 BYTE  diKeys[256];
 
-FrameTimer *gameTimer = new FrameTimer();
+FrameTimer* gameTimer = new FrameTimer();
 
+//Position of game character
 int walkX = 900;
 int walkY = 400;
 
@@ -410,11 +419,6 @@ void spriteRender() {
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(800, 100), D3DXVECTOR2(1, 1));
 	SpriteTransform movementSpeedTextTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(960, 35), D3DXVECTOR2(1, 1));
 	SpriteTransform orcTrans(D3DXVECTOR2(0, 0), D3DXVECTOR2(walkX, walkY), D3DXVECTOR2(3, 3));
-	//Background
-	spriteRect.left = 0;
-	spriteRect.right = 400;
-	spriteRect.top = 0;
-	spriteRect.bottom = 300;
 
 	//Text
 	textRect.left = 0;
@@ -426,7 +430,7 @@ void spriteRender() {
 
 	sprite->SetTransform(&bgTrans.getMat());
 
-	sprite->Draw(currentbg.getTexture(), &spriteRect, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	sprite->Draw(currentbg.getTexture(), &bgSprite.getRect(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Numbers
 	numTrans.transform();
@@ -666,7 +670,7 @@ void getInput() {
 }
 
 void update(int frames) {
-	for (int i = 0; i < frames; i++) 
+	for (int i = 0; i < frames; i++)
 	{
 		// Change cursor color
 		if (diKeys[DIK_LEFT] & 0x80) {
@@ -729,22 +733,22 @@ void update(int frames) {
 		if (diKeys[DIK_W] & 0x80) {
 			orcSprite.setCurrentMovement(MOVEUP);
 			orcSprite.nextFrame();
-			walkY-=movementSpeedMultiplier;
+			walkY -= movementSpeedMultiplier;
 		}
 		if (diKeys[DIK_A] & 0x80) {
 			orcSprite.setCurrentMovement(MOVELEFT);
 			orcSprite.nextFrame();
-			walkX-= movementSpeedMultiplier;
+			walkX -= movementSpeedMultiplier;
 		}
 		if (diKeys[DIK_S] & 0x80) {
 			orcSprite.setCurrentMovement(MOVEDOWN);
 			orcSprite.nextFrame();
-			walkY+= movementSpeedMultiplier;
+			walkY += movementSpeedMultiplier;
 		}
 		if (diKeys[DIK_D] & 0x80) {
 			orcSprite.setCurrentMovement(MOVERIGHT);
 			orcSprite.nextFrame();
-			walkX+= movementSpeedMultiplier;
+			walkX += movementSpeedMultiplier;
 		}
 	}
 
