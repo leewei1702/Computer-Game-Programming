@@ -277,17 +277,32 @@ FrameTimer* gameTimer = new FrameTimer();
 //PI
 float PI = 3.142;
 
+//Friction
+float friction = 0.01; //(1,1) = no friction
+
 //Spaceship position
-D3DXVECTOR2 spaceshipPosition(0, 0);
+D3DXVECTOR2 spaceshipPosition(100, 300);
 //Spaceship rotation
 float spaceshipRotation = 0;
 //Spaceship Physics
 D3DXVECTOR2 spaceshipVelocity;
 D3DXVECTOR2 spaceshipAcceleration;
 D3DXVECTOR2 spaceshipEngineForce;
-float friction = 0.01; //(1,1) = no friction
+
 float spaceshipEnginePower = 100;
 float spaceshipMass = 100;
+
+//Spaceship2 position
+D3DXVECTOR2 spaceship2Position(500, 300);
+//Spaceship2 rotation
+float spaceship2Rotation = 0;
+//Spaceship2 Physics
+D3DXVECTOR2 spaceship2Velocity;
+D3DXVECTOR2 spaceship2Acceleration;
+D3DXVECTOR2 spaceship2EngineForce;
+float spaceship2EnginePower = 100;
+float spaceship2Mass = 1000;
+
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -366,7 +381,7 @@ void spriteRender() {
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
 	SpriteTransform pointerTrans(D3DXVECTOR2(0,0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0,0), 0, D3DXVECTOR2(currentXpos, currentYpos));
 	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
-	SpriteTransform spaceship2Trans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, D3DXVECTOR2(0,0));
+	SpriteTransform spaceship2Trans(D3DXVECTOR2(spaceshipSprite2.getSpriteWidth() / 2, spaceshipSprite2.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite2.getSpriteWidth() / 2, spaceshipSprite2.getSpriteHeight() / 2), spaceship2Rotation, spaceship2Position);
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 
 	//Text
@@ -531,10 +546,29 @@ void update(int frames) {
 			spaceshipEngineForce.y = -cos(spaceshipRotation) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 		}
+		if (diKeys[DIK_LEFT] & 0x80) {
+			spaceship2Rotation -= 0.1;
+		}
+		if (diKeys[DIK_RIGHT] & 0x80) {
+			spaceship2Rotation += 0.1;
+		}
+		if (diKeys[DIK_UP] & 0x80) {
+			spaceship2EngineForce.x = sin(spaceship2Rotation) * spaceship2EnginePower;
+			spaceship2EngineForce.y = -cos(spaceship2Rotation) * spaceship2EnginePower;
+			spaceship2Acceleration = spaceship2EngineForce / spaceship2Mass;
+		}
 		spaceshipVelocity += spaceshipAcceleration;
 		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
 
+		spaceship2Velocity += spaceship2Acceleration;
+		spaceship2Velocity *= (1 - friction);
+		spaceship2Position += spaceship2Velocity;
+
+		//Collision Detection
+		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() > spaceship2Position.x && spaceshipPosition.x < spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y < spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() > spaceship2Position.y) {
+			spaceshipVelocity = D3DXVECTOR2(0, 0);
+		}
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
@@ -560,8 +594,34 @@ void update(int frames) {
 			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
+		//Spaceship2 right checking
+		if (spaceship2Position.x > screenWidth - spaceshipSprite2.getSpriteWidth()) {
+			spaceship2Position.x = screenWidth - spaceshipSprite2.getSpriteWidth();
+			spaceship2Rotation = 2 * PI - spaceship2Rotation;
+			spaceship2Velocity.x *= -1;
+
+		}
+		//Spaceship2 left checking
+		if (spaceship2Position.x < 0) {
+			spaceship2Position.x = 0;
+			spaceship2Rotation = 2 * PI - spaceship2Rotation;
+			spaceship2Velocity.x *= -1;
+		}
+		//Spaceship2 top checking
+		if (spaceship2Position.y < 0) {
+			spaceship2Position.y = 0;
+			spaceship2Rotation = PI - spaceship2Rotation;
+			spaceship2Velocity.y *= -1;
+		}
+		//Spaceship2 bottom checking
+		if (spaceship2Position.y > screenHeight - spaceshipSprite2.getSpriteHeight()) {
+			spaceship2Position.y = screenHeight - spaceshipSprite2.getSpriteHeight();
+			spaceship2Rotation = PI - spaceship2Rotation;
+			spaceship2Velocity.y *= -1;
+		}
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
+		spaceship2Acceleration = D3DXVECTOR2(0, 0);
 
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80) {\
@@ -602,6 +662,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	createSprite();
 
 	createDirectInput();
+
 
 	while (windowIsRunning())
 	{
