@@ -8,6 +8,7 @@
 #include <iostream>
 #include <dinput.h>
 #include <string>
+#include <D3dx9math.h>
 #include "FrameTimer.h"
 #define WIN32_LEAN_AND_MEAN
 
@@ -280,6 +281,9 @@ float PI = 3.142;
 //Friction
 float friction = 0.01; //(1,1) = no friction
 
+//Normalize
+D3DXVECTOR2 normalized;
+
 //Spaceship position
 D3DXVECTOR2 spaceshipPosition(100, 300);
 //Spaceship rotation
@@ -293,7 +297,7 @@ float spaceshipEnginePower = 100;
 float spaceshipMass = 100;
 
 //Spaceship2 position
-D3DXVECTOR2 spaceship2Position(500, 300);
+D3DXVECTOR2 spaceship2Position(800, 300);
 //Spaceship2 rotation
 float spaceship2Rotation = 0;
 //Spaceship2 Physics
@@ -567,8 +571,12 @@ void update(int frames) {
 
 		//Collision Detection
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() > spaceship2Position.x && spaceshipPosition.x < spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y < spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() > spaceship2Position.y) {
-			spaceshipVelocity = D3DXVECTOR2(0, 0);
+		
+			 D3DXVec2Normalize(&normalized, &spaceshipVelocity);
+			 spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass*spaceship2Velocity - spaceship2Mass * spaceship2Velocity)/(spaceshipMass + spaceship2Mass);
+			 spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
 		}
+
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
@@ -586,7 +594,7 @@ void update(int frames) {
 		if (spaceshipPosition.y < 0) {
 			spaceshipPosition.y = 0;
 			spaceshipRotation = PI - spaceshipRotation;
-			spaceshipVelocity.y *= -1;		
+			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship bottom checking
 		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
@@ -599,7 +607,6 @@ void update(int frames) {
 			spaceship2Position.x = screenWidth - spaceshipSprite2.getSpriteWidth();
 			spaceship2Rotation = 2 * PI - spaceship2Rotation;
 			spaceship2Velocity.x *= -1;
-
 		}
 		//Spaceship2 left checking
 		if (spaceship2Position.x < 0) {
