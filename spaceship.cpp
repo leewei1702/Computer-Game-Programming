@@ -49,7 +49,7 @@ public:
 		this->totalSpriteHeight = totalSpriteHeight;
 		this->spriteRow = spriteRow;
 		this->spriteCol = spriteCol;
-		this->currentFrame = currentFrame;
+		this->currentFrame = currentFrame-1;
 		this->maxFrame = maxFrame;
 		this->spriteWidth = totalSpriteWidth / spriteCol;
 		this->spriteHeight = totalSpriteHeight / spriteRow;
@@ -97,8 +97,11 @@ public:
 	void setCurrentMovement(int currentMovement) {
 		this->currentMovement = currentMovement;
 	}
+	void setCurrentFrame(int currentFrame) {
+		this->currentFrame = currentFrame-1;
+	}
 	void nextFrame() {
-		currentFrame++;
+		currentFrame+=2;
 	}
 	void prevFrame() {
 		currentFrame--;
@@ -193,23 +196,18 @@ public:
 //Texture Class
 class Texture {
 private:
-	LPDIRECT3DTEXTURE9 texture;
+	LPDIRECT3DTEXTURE9 texture = NULL;
 	LPCTSTR fileLocation = "";
 	int redKey = 0, greenKey = 0, blueKey = 0;
 public:
-	Texture(LPDIRECT3DTEXTURE9 texture, LPCTSTR fileLocation, int redKey, int greenKey, int blueKey) {
-		this->texture = texture;
+	Texture(LPCTSTR fileLocation, int redKey, int greenKey, int blueKey) {
 		this->fileLocation = fileLocation;
 		this->redKey = redKey;
 		this->greenKey = greenKey;
 		this->blueKey = blueKey;
 	}
-	Texture(LPDIRECT3DTEXTURE9 texture, LPCTSTR fileLocation) {
-		this->texture = texture;
+	Texture(LPCTSTR fileLocation) {
 		this->fileLocation = fileLocation;
-	}
-	Texture(LPDIRECT3DTEXTURE9 texture) {
-		this->texture = texture;
 	}
 	HRESULT createTextureFromFile() {
 		return D3DXCreateTextureFromFile(directStruct.d3dDevice, fileLocation, &texture);
@@ -229,13 +227,16 @@ public:
 };
 
 //Textures
-Texture pointer(NULL, "Assets/pointer.png");
-Texture spaceship(NULL, "Assets/practical9.png");
+Texture pointer("Assets/pointer.png");
+Texture spaceship("Assets/practical9.png");
+Texture spaceship2("Assets/practical9.png");
 
 //Spritesheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet spaceshipSprite(64, 64, 2, 2, 0, 4);
+SpriteSheet spaceshipSprite(64, 64, 2, 2, 1, 4);
+SpriteSheet spaceshipSprite2(64, 64, 2, 2, 2, 4);
+
 
 //Default value for rgb color
 int red = 0;
@@ -273,18 +274,20 @@ BYTE  diKeys[256];
 // FrameTimer Object
 FrameTimer* gameTimer = new FrameTimer();
 
+//PI
+float PI = 3.142;
+
 //Spaceship position
-D3DXVECTOR2 spaceshipPosition(500, 100);
+D3DXVECTOR2 spaceshipPosition(0, 0);
 //Spaceship rotation
 float spaceshipRotation = 0;
 //Spaceship Physics
 D3DXVECTOR2 spaceshipVelocity;
 D3DXVECTOR2 spaceshipAcceleration;
 D3DXVECTOR2 spaceshipEngineForce;
-D3DXVECTOR2 friction(0.99, 0.99); //(1,1) = no friction
+float friction = 0.01; //(1,1) = no friction
 float spaceshipEnginePower = 100;
 float spaceshipMass = 100;
-
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -362,7 +365,8 @@ void spriteRender() {
 
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
 	SpriteTransform pointerTrans(D3DXVECTOR2(0,0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0,0), 0, D3DXVECTOR2(currentXpos, currentYpos));
-	SpriteTransform spaceshipTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
+	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
+	SpriteTransform spaceship2Trans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, D3DXVECTOR2(0,0));
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 
 	//Text
@@ -384,6 +388,13 @@ void spriteRender() {
 	sprite->SetTransform(&spaceshipTrans.getMat());
 
 	sprite->Draw(spaceship.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	//Spaceship2
+	spaceship2Trans.transform();
+
+	sprite->SetTransform(&spaceship2Trans.getMat());
+
+	sprite->Draw(spaceship2.getTexture(), &spaceshipSprite2.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Draw Mouse Position Font
 	textTrans.transform();
@@ -443,6 +454,7 @@ void createSprite() {
 
 	hr = pointer.createTextureFromFile();
 	hr = spaceship.createTextureFromFile();
+	hr = spaceship2.createTextureFromFile();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -520,34 +532,39 @@ void update(int frames) {
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 		}
 		spaceshipVelocity += spaceshipAcceleration;
-		spaceshipVelocity.x *= friction.x;
-		spaceshipVelocity.y *= friction.y;
+		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
-		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
-			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
-			spaceshipVelocity.x *= -1;
-			spaceshipVelocity.y *= -1;
-		}
+
+		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
+			spaceshipRotation = 2*PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
-			spaceshipVelocity.y *= -1;
+			
 		}
+		//Spaceship left checking
 		if (spaceshipPosition.x < 0) {
 			spaceshipPosition.x = 0;
+			spaceshipRotation = 2 * PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
-			spaceshipVelocity.y *= -1;
 		}
+		//Spaceship top checking
 		if (spaceshipPosition.y < 0) {
 			spaceshipPosition.y = 0;
-			spaceshipVelocity.x *= -1;
+			spaceshipRotation = PI - spaceshipRotation;
+			spaceshipVelocity.y *= -1;		
+		}
+		//Spaceship bottom checking
+		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
+			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
+			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 
 		//Left click
-		if (mouseState.rgbButtons[0] & 0x80) {
+		if (mouseState.rgbButtons[0] & 0x80) {\
 			//do something
 		}
 		//Right click
