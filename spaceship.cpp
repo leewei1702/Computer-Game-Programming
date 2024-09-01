@@ -306,6 +306,7 @@ D3DXVECTOR2 spaceship2Acceleration;
 D3DXVECTOR2 spaceship2EngineForce;
 float spaceship2EnginePower = 100;
 float spaceship2Mass = 1000;
+boolean collide = false;
 
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -563,19 +564,25 @@ void update(int frames) {
 		}
 		spaceshipVelocity += spaceshipAcceleration;
 		spaceshipVelocity *= (1 - friction);
-		spaceshipPosition += spaceshipVelocity;
 
 		spaceship2Velocity += spaceship2Acceleration;
 		spaceship2Velocity *= (1 - friction);
-		spaceship2Position += spaceship2Velocity;
-
-		//Collision Detection
-		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() > spaceship2Position.x && spaceshipPosition.x < spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y < spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() > spaceship2Position.y) {
 		
-			 D3DXVec2Normalize(&normalized, &spaceshipVelocity);
+		//Collision Detection
+		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= spaceship2Position.y) {
+		
+			 //D3DXVec2Normalize(&normalized, &spaceshipVelocity);
 			 spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass*spaceship2Velocity - spaceship2Mass * spaceship2Velocity)/(spaceshipMass + spaceship2Mass);
 			 spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
+
+			 spaceshipPosition += spaceshipVelocity;
+			 spaceship2Position += spaceship2Velocity;
 		}
+		else {
+			spaceshipPosition += spaceshipVelocity;
+			spaceship2Position += spaceship2Velocity;
+		}
+
 
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
