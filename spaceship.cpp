@@ -286,28 +286,27 @@ D3DXVECTOR2 normalized;
 
 //Spaceship position
 D3DXVECTOR2 spaceshipPosition(100, 300);
+D3DXVECTOR2 spaceshipOldPosition;
 //Spaceship rotation
 float spaceshipRotation = 0;
 //Spaceship Physics
 D3DXVECTOR2 spaceshipVelocity;
 D3DXVECTOR2 spaceshipAcceleration;
 D3DXVECTOR2 spaceshipEngineForce;
-
-float spaceshipEnginePower = 100;
+float spaceshipEnginePower = 30;
 float spaceshipMass = 100;
 
 //Spaceship2 position
 D3DXVECTOR2 spaceship2Position(800, 300);
+D3DXVECTOR2 spaceship2OldPosition;
 //Spaceship2 rotation
 float spaceship2Rotation = 0;
 //Spaceship2 Physics
 D3DXVECTOR2 spaceship2Velocity;
 D3DXVECTOR2 spaceship2Acceleration;
 D3DXVECTOR2 spaceship2EngineForce;
-float spaceship2EnginePower = 100;
-float spaceship2Mass = 1000;
-boolean collide = false;
-
+float spaceship2EnginePower = 30;
+float spaceship2Mass = 500;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -546,11 +545,6 @@ void update(int frames) {
 		if (diKeys[DIK_D] & 0x80) {
 			spaceshipRotation += 0.1;
 		}
-		if (diKeys[DIK_SPACE] & 0x80) {
-			spaceshipEngineForce.x = sin(spaceshipRotation) * spaceshipEnginePower;
-			spaceshipEngineForce.y = -cos(spaceshipRotation) * spaceshipEnginePower;
-			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
-		}
 		if (diKeys[DIK_LEFT] & 0x80) {
 			spaceship2Rotation -= 0.1;
 		}
@@ -562,12 +556,22 @@ void update(int frames) {
 			spaceship2EngineForce.y = -cos(spaceship2Rotation) * spaceship2EnginePower;
 			spaceship2Acceleration = spaceship2EngineForce / spaceship2Mass;
 		}
+		if (diKeys[DIK_SPACE] & 0x80) {
+			spaceshipEngineForce.x = sin(spaceshipRotation) * spaceshipEnginePower;
+			spaceshipEngineForce.y = -cos(spaceshipRotation) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+		}
+		spaceshipOldPosition = spaceshipPosition;
+		spaceship2OldPosition = spaceship2Position;
+
 		spaceshipVelocity += spaceshipAcceleration;
 		spaceshipVelocity *= (1 - friction);
+		spaceshipPosition += spaceshipVelocity;
 
 		spaceship2Velocity += spaceship2Acceleration;
 		spaceship2Velocity *= (1 - friction);
-		
+		spaceship2Position += spaceship2Velocity;
+
 		//Collision Detection
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= spaceship2Position.y) {
 		
@@ -575,61 +579,65 @@ void update(int frames) {
 			 spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass*spaceship2Velocity - spaceship2Mass * spaceship2Velocity)/(spaceshipMass + spaceship2Mass);
 			 spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
 
+			 spaceshipPosition = spaceshipOldPosition;
+			 spaceship2Position = spaceship2OldPosition;
 			 spaceshipPosition += spaceshipVelocity;
 			 spaceship2Position += spaceship2Velocity;
+			 
 		}
-		else {
-			spaceshipPosition += spaceshipVelocity;
-			spaceship2Position += spaceship2Velocity;
-		}
-
-
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
-			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
-			spaceshipRotation = 2*PI - spaceshipRotation;
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
+			spaceshipRotation = 2 * PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
-			
 		}
 		//Spaceship left checking
 		if (spaceshipPosition.x < 0) {
-			spaceshipPosition.x = 0;
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceshipRotation = 2 * PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
 		}
 		//Spaceship top checking
 		if (spaceshipPosition.y < 0) {
-			spaceshipPosition.y = 0;
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship bottom checking
 		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
-			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship2 right checking
 		if (spaceship2Position.x > screenWidth - spaceshipSprite2.getSpriteWidth()) {
-			spaceship2Position.x = screenWidth - spaceshipSprite2.getSpriteWidth();
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceship2Rotation = 2 * PI - spaceship2Rotation;
 			spaceship2Velocity.x *= -1;
 		}
 		//Spaceship2 left checking
 		if (spaceship2Position.x < 0) {
-			spaceship2Position.x = 0;
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceship2Rotation = 2 * PI - spaceship2Rotation;
 			spaceship2Velocity.x *= -1;
 		}
 		//Spaceship2 top checking
 		if (spaceship2Position.y < 0) {
-			spaceship2Position.y = 0;
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceship2Rotation = PI - spaceship2Rotation;
 			spaceship2Velocity.y *= -1;
 		}
 		//Spaceship2 bottom checking
 		if (spaceship2Position.y > screenHeight - spaceshipSprite2.getSpriteHeight()) {
-			spaceship2Position.y = screenHeight - spaceshipSprite2.getSpriteHeight();
+			spaceshipPosition = spaceshipOldPosition;
+			spaceship2Position = spaceship2OldPosition;
 			spaceship2Rotation = PI - spaceship2Rotation;
 			spaceship2Velocity.y *= -1;
 		}
@@ -667,7 +675,7 @@ void update(int frames) {
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-	gameTimer->init(30);
+	gameTimer->init(50);
 
 	createWindow();
 
