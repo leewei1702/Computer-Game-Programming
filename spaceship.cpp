@@ -282,13 +282,14 @@ float PI = 3.142;
 float friction = 0.01; //(1,1) = no friction
 
 //Normalize
-D3DXVECTOR2 normalized;
+D3DXVECTOR2 normalizedSpaceshipVelocity;
+D3DXVECTOR2 normalizedSpaceship2Velocity;
 
 //Spaceship position
 D3DXVECTOR2 spaceshipPosition(100, 300);
 D3DXVECTOR2 spaceshipOldPosition;
 //Spaceship rotation
-float spaceshipRotation = 0;
+float spaceshipRotation = 1.5708;
 //Spaceship Physics
 D3DXVECTOR2 spaceshipVelocity;
 D3DXVECTOR2 spaceshipAcceleration;
@@ -300,7 +301,7 @@ float spaceshipMass = 100;
 D3DXVECTOR2 spaceship2Position(800, 300);
 D3DXVECTOR2 spaceship2OldPosition;
 //Spaceship2 rotation
-float spaceship2Rotation = 0;
+float spaceship2Rotation = 4.71239;
 //Spaceship2 Physics
 D3DXVECTOR2 spaceship2Velocity;
 D3DXVECTOR2 spaceship2Acceleration;
@@ -622,7 +623,8 @@ void update(int frames) {
 		//Collision Detection
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= spaceship2Position.y) {
 
-			//D3DXVec2Normalize(&normalized, &spaceshipVelocity);
+			//D3DXVec2Normalize(&normalizedSpaceshipVelocity, &spaceshipVelocity);
+			//D3DXVec2Normalize(&normalizedSpaceship2Velocity, &spaceship2Velocity);
 			spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass * spaceship2Velocity - spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
 			spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
 
