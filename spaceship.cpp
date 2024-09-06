@@ -555,6 +555,12 @@ void update(int frames) {
 		if (diKeys[DIK_RIGHT] & 0x80) {
 			spaceship2Rotation += 0.1;
 		}
+		float distanceX = currentXpos - spaceshipPosition.x ;
+		float distanceY = currentYpos - spaceshipPosition.y ;
+		float distance = sqrt(pow(currentXpos-spaceshipPosition.x , 2) + pow(currentYpos-spaceshipPosition.y, 2));
+		spaceshipRotation = asin(distanceX / distance);
+
+		
 		if (diKeys[DIK_UP] & 0x80) {
 			spaceship2EngineForce.x = sin(spaceship2Rotation) * spaceship2EnginePower;
 			spaceship2EngineForce.y = -cos(spaceship2Rotation) * spaceship2EnginePower;
@@ -575,6 +581,8 @@ void update(int frames) {
 		spaceship2Velocity += spaceship2Acceleration;
 		spaceship2Velocity *= (1 - friction);
 		spaceship2Position += spaceship2Velocity;
+
+
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
@@ -647,6 +655,7 @@ void update(int frames) {
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
 		//do something
+		cout << 180/PI * spaceshipRotation << endl;
 	}
 	//Right click
 	if (mouseState.rgbButtons[1] & 0x80) {
