@@ -9,6 +9,7 @@
 #include <dinput.h>
 #include <string>
 #include <D3dx9math.h>
+#include <cmath>
 #include "FrameTimer.h"
 #include "AudioManager.h"
 #define WIN32_LEAN_AND_MEAN
@@ -312,6 +313,9 @@ D3DXVECTOR2 spaceship2EngineForce;
 float spaceship2EnginePower = 40;
 float spaceship2Mass = 500;
 
+float spaceshipCursorDistanceX;
+float spaceshipCursorDistance;
+
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
@@ -555,14 +559,14 @@ void update(int frames) {
 		if (diKeys[DIK_RIGHT] & 0x80) {
 			spaceship2Rotation += 0.1;
 		}
-		float distanceX = currentXpos - spaceshipPosition.x;
-		float distance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
+		spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
+		spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
 		
 		if (currentYpos > spaceshipPosition.y) {
-			spaceshipRotation = PI - asin(distanceX / distance);
+			spaceshipRotation = PI - asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
 		}
 		else {
-			spaceshipRotation = asin(distanceX / distance);
+			spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
 		}
 
 		
@@ -593,49 +597,41 @@ void update(int frames) {
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
-			spaceshipRotation = 2 * PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
 		}
 		//Spaceship left checking
 		if (spaceshipPosition.x < 0) {
 			spaceshipPosition.x = 0;
-			spaceshipRotation = 2 * PI - spaceshipRotation;
 			spaceshipVelocity.x *= -1;
 		}
 		//Spaceship top checking
 		if (spaceshipPosition.y < 0) {
 			spaceshipPosition.y = 0;
-			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship bottom checking
 		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
 			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
-			spaceshipRotation = PI - spaceshipRotation;
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship2 right checking
 		if (spaceship2Position.x > screenWidth - spaceshipSprite2.getSpriteWidth()) {
 			spaceship2Position.x = screenWidth - spaceshipSprite2.getSpriteWidth();
-			spaceship2Rotation = 2 * PI - spaceship2Rotation;
 			spaceship2Velocity.x *= -1;
 		}
 		//Spaceship2 left checking
 		if (spaceship2Position.x < 0) {
 			spaceship2Position.x = 0;
-			spaceship2Rotation = 2 * PI - spaceship2Rotation;
 			spaceship2Velocity.x *= -1;
 		}
 		//Spaceship2 top checking
 		if (spaceship2Position.y < 0) {
 			spaceship2Position.y = 0;
-			spaceship2Rotation = PI - spaceship2Rotation;
 			spaceship2Velocity.y *= -1;
 		}
 		//Spaceship2 bottom checking
 		if (spaceship2Position.y > screenHeight - spaceshipSprite2.getSpriteHeight()) {
 			spaceship2Position.y = screenHeight - spaceshipSprite2.getSpriteHeight();
-			spaceship2Rotation = PI - spaceship2Rotation;
 			spaceship2Velocity.y *= -1;
 		}
 		//Collision Detection
