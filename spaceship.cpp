@@ -272,7 +272,7 @@ Texture bulletTexture("Assets/bullet.png");
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet pointerSprite(20,20);
+SpriteSheet pointerSprite(30,30);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
@@ -813,16 +813,16 @@ void update(int frames) {
 		PostQuitMessage(0);
 	}
 	//Mouse position
-	if (currentYpos >= 0 || currentYpos <= screenHeight) {
+	if (currentYpos >= 0 || currentYpos <= screenHeight - pointerSprite.getTotalSpriteHeight()) {
 		currentYpos += mouseState.lY;
 	}
-	if (currentYpos < 0 || currentYpos > screenHeight) {
+	if (currentYpos < 0 || currentYpos > screenHeight - pointerSprite.getTotalSpriteHeight()) {
 		currentYpos -= mouseState.lY;
 	}
-	if (currentXpos >= 0 || currentXpos <= screenWidth) {
+	if (currentXpos >= 0 || currentXpos <= screenWidth - pointerSprite.getTotalSpriteWidth()) {
 		currentXpos += mouseState.lX;
 	}
-	if (currentXpos < 0 || currentXpos > screenWidth) {
+	if (currentXpos < 0 || currentXpos > screenWidth - pointerSprite.getTotalSpriteWidth()) {
 		currentXpos -= mouseState.lX;
 	}
 }
