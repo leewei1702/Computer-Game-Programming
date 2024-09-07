@@ -259,6 +259,7 @@ public:
 Texture pointerTexture("Assets/pointer.png");
 Texture spaceshipTexture("Assets/ship.png");
 Texture thrustTexture("Assets/thrust.png");
+Texture turretTexture("Assets/turret.png");
 Texture asteroidTexture("Assets/asteroid.png");
 
 //Spritesheet
@@ -268,6 +269,7 @@ Texture asteroidTexture("Assets/asteroid.png");
 SpriteSheet pointerSprite(32, 32);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
+SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
 SpriteSheet asteroidSprite(32, 10, 1, 2, 1, 2);
 
 //Default value for rgb color
@@ -343,8 +345,9 @@ D3DXVECTOR2 spaceship2EngineForce;
 float spaceship2EnginePower = 40;
 float spaceship2Mass = 500;
 
-float spaceshipCursorDistanceX;
-float spaceshipCursorDistance;
+D3DXVECTOR2 turretPosition;
+float turretRotation;
+
 boolean toggleShoot = false;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -379,7 +382,7 @@ void createWindow() {
 
 	RegisterClass(&wndStruct.wndClass);
 
-	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project A (Press <-/-> to switch the color of the cursor)", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
+	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd, 1);
 }
@@ -420,11 +423,12 @@ void createDirectX() {
 
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
-
+	turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
 	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
 	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
 	SpriteTransform thrustTrans(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
+	SpriteTransform turretTrans(D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(0.35, 0.35), D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), turretRotation, turretPosition);
 	SpriteTransform asteroid1Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(100, 500));
 	SpriteTransform asteroid2Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(700, 700));
 
@@ -449,6 +453,9 @@ void spriteRender() {
 	sprite->SetTransform(&spaceshipTrans.getMat());
 	sprite->Draw(spaceshipTexture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
+	turretTrans.transform();
+	sprite->SetTransform(&turretTrans.getMat());
+	sprite->Draw(turretTexture.getTexture(), &turretSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 
 	//Draw Mouse Position Font
@@ -510,6 +517,7 @@ void createSprite() {
 	hr = pointerTexture.createTextureFromFile();
 	hr = thrustTexture.createTextureFromFile();
 	hr = spaceshipTexture.createTextureFromFile();
+	hr = turretTexture.createTextureFromFile();
 	hr = asteroidTexture.createTextureFromFile();
 
 	if (FAILED(hr)) {
@@ -529,6 +537,9 @@ void cleanupSprite() {
 
 	spaceshipTexture.releaseTexture();
 	spaceshipTexture.setTexture(NULL);
+
+	turretTexture.releaseTexture();
+	turretTexture.setTexture(NULL);
 
 	asteroidTexture.releaseTexture();
 	asteroidTexture.setTexture(NULL);
@@ -627,12 +638,13 @@ void update(int frames) {
 		//spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
 		//spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
 		//
-		//if (currentYpos > spaceshipPosition.y) {
-		//	spaceshipRotation = PI - asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
-		//}
-		//else {
-		//	spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
-		//}
+		if (currentYpos > turretPosition.y) {
+			turretRotation = PI - asin((currentXpos - turretPosition.x) / sqrt(pow(currentXpos - turretPosition.x, 2) + pow(turretPosition.y - currentYpos, 2)));
+		
+		}
+		else {
+			turretRotation = asin((currentXpos - turretPosition.x) / sqrt(pow(currentXpos - turretPosition.x, 2) + pow(turretPosition.y - currentYpos, 2)));
+		}
 	
 		spaceshipOldPosition = spaceshipPosition;
 
