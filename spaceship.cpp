@@ -283,8 +283,8 @@ SpriteTransform pointerTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
-SpriteTransform bulletTrans[30];
-SpriteTransform asteroidTrans[20];
+SpriteTransform bulletTrans[50];
+SpriteTransform asteroidTrans[30];
 
 //Default value for rgb color
 int red = 0;
@@ -428,7 +428,7 @@ void createWindow() {
 	RegisterClass(&wndStruct.wndClass);
 
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
-	ShowCursor(true);
+	ShowCursor(false);
 	ShowWindow(wndStruct.g_hWnd, 1);
 }
 
@@ -619,7 +619,7 @@ void createDirectInput() {
 
 	dInputMouseDevice->SetDataFormat(&c_dfDIMouse);
 
-	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
 }
 
 void getInput() {
@@ -782,6 +782,14 @@ void update(int frames) {
 		//		spaceship2Position = spaceship2OldPosition;
 		//	}
 		//}
+		for (int i = 0; i < bulletEntry; i++) {
+			for (int j = 0; j < asteroidEntry; j++) {
+				if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
+					removeBulletGap(i);
+					removeAsteroidGap(j);
+				}
+			}
+		}
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
@@ -867,7 +875,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	gameTimer->init(50);
 
-	bulletTimer->init(3);
+	bulletTimer->init(10);
 
 	thrustTimer->init(1);
 
