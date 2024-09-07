@@ -790,7 +790,13 @@ void update(int frames) {
 				}
 			}
 		}
-
+		for (int i = 0; i < asteroidEntry; i++) {
+			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
+				MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
+				PostQuitMessage(0);
+				
+			}
+		}
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
 	}
