@@ -118,7 +118,7 @@ public:
 	}
 	void nextThrustFrame() {
 		currentFrame++;
-		if (currentFrame > maxFrame -1) {
+		if (currentFrame > maxFrame-1) {
 			currentFrame = 0;
 		}
 	}
@@ -281,7 +281,7 @@ SpriteTransform pointerTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
-SpriteTransform bulletTrans[10];
+SpriteTransform bulletTrans[20];
 SpriteTransform asteroid1Trans;
 SpriteTransform asteroid2Trans;
 
@@ -321,6 +321,7 @@ BYTE  diKeys[256];
 // FrameTimer Object
 FrameTimer* gameTimer = new FrameTimer();
 FrameTimer* bulletTimer = new FrameTimer();
+FrameTimer* thrustTimer = new FrameTimer();
 // Audio Object
 AudioManager* myAudioManager = new AudioManager();
 
@@ -365,6 +366,9 @@ float pointerCenterY;
 float turretCenterX;
 float turretCenterY;
 D3DXVECTOR2 bulletPosition;
+int bulletEntry = 0;
+D3DXVECTOR2 bulletVelocity;
+float bulletPower = 50;
 
 boolean toggleShoot = false;
 
@@ -476,12 +480,11 @@ void spriteRender() {
 	sprite->SetTransform(&turretTrans.getMat());
 	sprite->Draw(turretTexture.getTexture(), &turretSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
-	if (bulletTrans != NULL) {
-		bulletTrans[0].transform();
-		sprite->SetTransform(&bulletTrans[0].getMat());
-		sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	for(int i=0; i< bulletEntry; i++){
+			bulletTrans[i].transform();
+			sprite->SetTransform(&bulletTrans[i].getMat());
+			sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
-
 	//Draw Mouse Position Font
 	textTrans.transform();
 
@@ -670,6 +673,13 @@ void update(int frames) {
 		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
 
+		for (int i = 0; i < bulletEntry; i++) {
+			bulletVelocity.x = sin(bulletTrans[bulletEntry].getRotation()) * bulletPower;
+			bulletVelocity.y = -cos(bulletTrans[bulletEntry].getRotation()) * bulletPower;
+			D3DXVECTOR2 bulletpos = bulletTrans[bulletEntry].getTrans() += bulletVelocity;
+			bulletTrans[bulletEntry].setTrans(bulletpos);
+		}
+
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
 			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
@@ -765,12 +775,15 @@ void updateBullet(int frames) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			cout << "shoot" << endl;
-			bulletTrans[0] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletPosition);
+			bulletTrans[bulletEntry] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletPosition);
+			bulletEntry++;
 			myAudioManager->PlaySoundTrack();
 		}
 	}
+	
+}
+void updateThrust(int frames) {
 	thrustSprite.nextThrustFrame();
-
 }
 void Sound() {
 	myAudioManager->UpdateSound();
@@ -781,6 +794,8 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	gameTimer->init(50);
 
 	bulletTimer->init(2);
+
+	thrustTimer->init(1);
 
 	createWindow();
 
@@ -799,6 +814,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 		//Physics();
 		update(gameTimer->FramesToUpdate());
 		updateBullet(bulletTimer->FramesToUpdate());
+		updateThrust(thrustTimer->FramesToUpdate());
 		render();
 		Sound();
 
