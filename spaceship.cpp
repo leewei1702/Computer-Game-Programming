@@ -573,19 +573,31 @@ void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
 		// Sprite animation
+		if (diKeys[DIK_W] & 0x80) {
+			spaceshipEngineForce.x += sin(0) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(0) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+		}
+
 		if (diKeys[DIK_A] & 0x80) {
-			
+			spaceshipEngineForce.x += sin(270*PI/180) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(270 * PI / 180) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+			/*spaceshipRotation -= 0.07;*/
+		}
+		if (diKeys[DIK_S] & 0x80) {
+			spaceshipEngineForce.x += sin(180 * PI / 180) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(180 * PI / 180) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			/*spaceshipRotation -= 0.07;*/
 		}
 		if (diKeys[DIK_D] & 0x80) {
+			spaceshipEngineForce.x += sin(90 * PI / 180) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(90 * PI / 180) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			/*spaceshipRotation += 0.07;*/
 		}
-		if (diKeys[DIK_LEFT] & 0x80) {
-			spaceship2Rotation -= 0.1;
-		}
-		if (diKeys[DIK_RIGHT] & 0x80) {
-			spaceship2Rotation += 0.1;
-		}
+		
 		//spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
 		//spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
 		//
@@ -595,12 +607,7 @@ void update(int frames) {
 		//else {
 		//	spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
 		//}
-		
-		if (diKeys[DIK_W] & 0x80) {
-			spaceshipEngineForce.x = sin(0) * spaceshipEnginePower;
-			spaceshipEngineForce.y = -cos(0) * spaceshipEnginePower;
-			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
-		}
+	
 		spaceshipOldPosition = spaceshipPosition;
 		spaceship2OldPosition = spaceship2Position;
 
@@ -652,8 +659,7 @@ void update(int frames) {
 		//}
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
-		spaceship2Acceleration = D3DXVECTOR2(0, 0);
-
+		spaceshipEngineForce = D3DXVECTOR2(0, 0);
 	}
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
