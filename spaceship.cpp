@@ -10,6 +10,8 @@
 #include <string>
 #include <D3dx9math.h>
 #include <cmath>
+#include <ctime>
+#include <cstdlib>
 #include "FrameTimer.h"
 #include "AudioManager.h"
 #define WIN32_LEAN_AND_MEAN
@@ -274,7 +276,7 @@ SpriteSheet pointerSprite(20,20);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
-SpriteSheet asteroidSprite(32, 10, 1, 2, 1, 2);
+SpriteSheet asteroidSprite(60, 60);
 SpriteSheet bulletSprite(16, 28);
 
 SpriteTransform pointerTrans;
@@ -282,8 +284,7 @@ SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
 SpriteTransform bulletTrans[30];
-SpriteTransform asteroid1Trans;
-SpriteTransform asteroid2Trans;
+SpriteTransform asteroidTrans[20];
 
 //Default value for rgb color
 int red = 0;
@@ -322,6 +323,7 @@ BYTE  diKeys[256];
 FrameTimer* gameTimer = new FrameTimer();
 FrameTimer* bulletTimer = new FrameTimer();
 FrameTimer* thrustTimer = new FrameTimer();
+FrameTimer* asteroidTimer = new FrameTimer();
 // Audio Object
 AudioManager* myAudioManager = new AudioManager();
 
@@ -365,11 +367,18 @@ float pointerCenterX;
 float pointerCenterY;
 float turretCenterX;
 float turretCenterY;
-D3DXVECTOR2 bulletPosition;
+D3DXVECTOR2 bulletStartPosition;
+D3DXVECTOR2 bulletPos;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
 
+int asteroidEntry = 0;
+D3DXVECTOR2 asteroidVelocity;
+float asteroidPower = 10;
+float asteroidRotation;
+D3DXVECTOR2 asteroidStartPosition(500,-100);
+D3DXVECTOR2 asteroidPosition;
 boolean toggleShoot = false;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -391,11 +400,18 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	return 0;
 }
 
-void removeGap(int removedIndex) {
+void removeBulletGap(int removedIndex) {
 	for (int i = removedIndex; i < bulletEntry - 1; i++) {
 		bulletTrans[i] = bulletTrans[i + 1];
 	}
 	bulletEntry--;
+}
+
+void removeAsteroidGap(int removedIndex) {
+	for (int i = removedIndex; i < asteroidEntry - 1; i++) {
+		asteroidTrans[i] = asteroidTrans[i + 1];
+	}
+	asteroidEntry--;
 }
 
 void createWindow() {
@@ -453,14 +469,12 @@ void createDirectX() {
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 	turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
-	bulletPosition = D3DXVECTOR2(spaceshipPosition.x + spaceshipSprite.getSpriteWidth() / 2 - 5, spaceshipPosition.y + spaceshipSprite.getSpriteHeight() / 2 - 5);
+	bulletStartPosition = D3DXVECTOR2(spaceshipPosition.x + spaceshipSprite.getSpriteWidth() / 2 - 5, spaceshipPosition.y + spaceshipSprite.getSpriteHeight() / 2 - 5);
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
     pointerTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
 	spaceshipTrans = SpriteTransform(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
     thrustTrans = SpriteTransform(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
 	turretTrans = SpriteTransform(D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(0.35, 0.35), D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), turretRotation, turretPosition);
-    asteroid1Trans = SpriteTransform(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(100, 500));
-	asteroid2Trans = SpriteTransform(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(700, 700));
 
 
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
@@ -491,6 +505,11 @@ void spriteRender() {
 			bulletTrans[i].transform();
 			sprite->SetTransform(&bulletTrans[i].getMat());
 			sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	}
+	for (int i = 0; i < asteroidEntry; i++) {
+		    asteroidTrans[i].transform();
+		    sprite->SetTransform(&asteroidTrans[i].getMat());
+		    sprite->Draw(asteroidTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
 	//Draw Mouse Position Font
 	textTrans.transform();
@@ -630,6 +649,7 @@ void cleanupInput() {
 void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
+		asteroidRotation += 0.05;
 		// Sprite animation
 		if ((int)spaceshipVelocity.x == 0 && (int)spaceshipVelocity.y == 0) {
 			spaceshipSprite.staticFrame();
@@ -683,27 +703,45 @@ void update(int frames) {
 		for (int i = 0; i < bulletEntry; i++) {
 			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
 			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
-			D3DXVECTOR2 bulletPos = bulletTrans[i].getTrans() += bulletVelocity;
+		    bulletPos = bulletTrans[i].getTrans() + bulletVelocity;
 			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
-			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getSpriteWidth()) {
+			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth()) {
 				cout << "hit" << endl;
-				bulletTrans[i].getTrans().x = screenWidth - bulletSprite.getSpriteWidth();
-				removeGap(i);
+				bulletTrans[i].getTrans().x = screenWidth - bulletSprite.getTotalSpriteWidth();
+				removeBulletGap(i);
 			}
 			if (bulletTrans[i].getTrans().x < 0) {
 				cout << "hit" << endl;
 				bulletTrans[i].getTrans().x = 0;
-				removeGap(i);
+				removeBulletGap(i);
 			}
 			if (bulletTrans[i].getTrans().y < 0) {
 				cout << "hit" << endl;
 				bulletTrans[i].getTrans().y = 0;
-				removeGap(i);
+				removeBulletGap(i);
 			}
-			if (bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getSpriteHeight()) {
+			if (bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
 				cout << "hit" << endl;
-				bulletTrans[i].getTrans().y = screenHeight - bulletSprite.getSpriteHeight();
-				removeGap(i);
+				bulletTrans[i].getTrans().y = screenHeight - bulletSprite.getTotalSpriteHeight();
+				removeBulletGap(i);
+			}
+		}
+		for (int i = 0; i < asteroidEntry; i++) {
+			asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
+			asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
+			asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
+			asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
+			if (asteroidTrans[i].getTrans().x > screenWidth) {
+				asteroidTrans[i].getTrans().x = screenWidth;
+				removeAsteroidGap(i);
+			}
+			if (asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth()) {
+				asteroidTrans[i].getTrans().x = 0;
+				removeAsteroidGap(i);
+			}
+			if (asteroidTrans[i].getTrans().y > screenHeight) {
+				asteroidTrans[i].getTrans().y = screenHeight;
+				removeAsteroidGap(i);
 			}
 		}
 
@@ -802,7 +840,7 @@ void updateBullet(int frames) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			cout << "shoot" << endl;
-			bulletTrans[bulletEntry] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletPosition);
+			bulletTrans[bulletEntry] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletStartPosition);
 			bulletEntry++;
 			myAudioManager->PlaySoundTrack();
 		}
@@ -812,17 +850,28 @@ void updateBullet(int frames) {
 void updateThrust(int frames) {
 	thrustSprite.nextThrustFrame();
 }
+void updateAsteroid(int frames) {
+	asteroidStartPosition.x = 50 + (rand() % 1200);
+	for (int i = 0; i < frames; i++) {
+		asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
+		asteroidEntry++;
+	}
+}
 void Sound() {
 	myAudioManager->UpdateSound();
 }
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
+	srand(time(0));
+
 	gameTimer->init(50);
 
-	bulletTimer->init(2);
+	bulletTimer->init(3);
 
 	thrustTimer->init(1);
+
+	asteroidTimer->init(2);
 
 	createWindow();
 
@@ -842,6 +891,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 		update(gameTimer->FramesToUpdate());
 		updateBullet(bulletTimer->FramesToUpdate());
 		updateThrust(thrustTimer->FramesToUpdate());
+		updateAsteroid(asteroidTimer->FramesToUpdate());
 		render();
 		Sound();
 
