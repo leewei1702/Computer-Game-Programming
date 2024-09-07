@@ -107,8 +107,11 @@ public:
 	void setCurrentFrame(int currentFrame) {
 		this->currentFrame = currentFrame-1;
 	}
-	void nextFrame() {
-		currentFrame+=2;
+	void leftFrame() {
+		currentFrame = 2;
+	}
+	void rightFrame() {
+		currentFrame = 4;
 	}
 	void prevFrame() {
 		currentFrame--;
@@ -124,9 +127,9 @@ public:
 			spriteRect.bottom = totalSpriteHeight;
 			return spriteRect;
 		}
-		spriteRect.left = currentFrame % spriteCol * spriteWidth;
+		spriteRect.left = (currentFrame % spriteCol) * spriteWidth;
 		spriteRect.right = spriteRect.left + spriteWidth;
-		spriteRect.top = currentFrame % maxFrame / spriteRow * spriteHeight;
+		spriteRect.top = (currentFrame / spriteCol) * spriteHeight;
 		spriteRect.bottom = spriteRect.top + spriteHeight;
 		return spriteRect;
 	}
@@ -244,21 +247,19 @@ public:
 };
 
 //Textures
-Texture textures[] = { 
-	Texture("Assets/pointer.png"), 
-	Texture("Assets/practical9.png"),
-	Texture("Assets/practical9.png"),
-};
+Texture pointerTexture("Assets/pointer.png");
+Texture spaceshipTexture("Assets/ship.png");
+Texture thrustTexture("Assets/thrust.png");
+Texture asteroidTexture("Assets/asteroid.png");
 
 //Spritesheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet spriteSheets[] = {
-	SpriteSheet(32, 32),                    //Pointer Sprite
-	SpriteSheet(64, 64, 2, 2, 1, 4),        //Spaceship Sprite
-	SpriteSheet(64, 64, 2, 2, 2, 4)         //Spaceship2 Sprite
-};
+SpriteSheet pointerSprite(32, 32);
+SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
+SpriteSheet thrustSprite(32, 10, 1, 2, 1, 2);
+SpriteSheet asteroidSprite(32, 10, 1, 2, 1, 2);
 
 //Default value for rgb color
 int red = 0;
@@ -313,7 +314,7 @@ D3DXVECTOR2 normalizedSpaceship2Velocity;
 D3DXVECTOR2 spaceshipPosition(100, 300);
 D3DXVECTOR2 spaceshipOldPosition;
 //Spaceship rotation
-float spaceshipRotation = 1.5708;
+float spaceshipRotation = 0;
 //Spaceship Physics
 D3DXVECTOR2 spaceshipVelocity;
 D3DXVECTOR2 spaceshipAcceleration;
@@ -412,12 +413,12 @@ void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
+	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
+	SpriteTransform thrustTrans(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
+	SpriteTransform asteroid1Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(100, 500));
+	SpriteTransform asteroid2Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(700, 700));
 
-	SpriteTransform spriteTransforms[]{
-		SpriteTransform(D3DXVECTOR2(0,0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0,0), 0, D3DXVECTOR2(currentXpos, currentYpos)),
-		SpriteTransform(D3DXVECTOR2(spriteSheets[1].getSpriteWidth() / 2, spriteSheets[1].getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spriteSheets[1].getSpriteWidth() / 2, spriteSheets[1].getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition),
-		SpriteTransform(D3DXVECTOR2(spriteSheets[2].getSpriteWidth() / 2, spriteSheets[2].getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spriteSheets[2].getSpriteWidth() / 2, spriteSheets[2].getSpriteHeight() / 2), spaceship2Rotation, spaceship2Position),
-	};
 
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 
@@ -427,12 +428,19 @@ void spriteRender() {
 	textRect.right = 300;
 	textRect.bottom = 125;
 
-	
-	for (int i = 0; i < sizeof(spriteTransforms) / sizeof(spriteTransforms[0]); i++) {
-		spriteTransforms[i].transform();
-		sprite->SetTransform(&spriteTransforms[i].getMat());
-		sprite->Draw(textures[i].getTexture(), &spriteSheets[i].crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
-	}
+	pointerTrans.transform();
+	sprite->SetTransform(&pointerTrans.getMat());
+	sprite->Draw(pointerTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	thrustTrans.transform();
+	sprite->SetTransform(&thrustTrans.getMat());
+	sprite->Draw(thrustTexture.getTexture(), &thrustSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	spaceshipTrans.transform();
+	sprite->SetTransform(&spaceshipTrans.getMat());
+	sprite->Draw(spaceshipTexture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+
 
 	//Draw Mouse Position Font
 	textTrans.transform();
@@ -490,10 +498,10 @@ void createSprite() {
 		cout << "Create Font Failed!!!";
 	}
 	
-	for (int i = 0; i < sizeof(textures) / sizeof(textures[0]); i++) {
-		hr = textures[i].createTextureFromFile();
-	}
-	
+	hr = pointerTexture.createTextureFromFile();
+	hr = thrustTexture.createTextureFromFile();
+	hr = spaceshipTexture.createTextureFromFile();
+	hr = asteroidTexture.createTextureFromFile();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -504,11 +512,17 @@ void cleanupSprite() {
 	sprite->Release();
 	sprite = NULL;
 
-	
-	for (int i = 0; i < sizeof(textures) / sizeof(textures[0]); i++) {
-		textures[i].releaseTexture();
-		textures[i].setTexture(NULL);
-	}
+	pointerTexture.releaseTexture();
+	pointerTexture.setTexture(NULL);
+
+	thrustTexture.releaseTexture();
+	thrustTexture.setTexture(NULL);
+
+	spaceshipTexture.releaseTexture();
+	spaceshipTexture.setTexture(NULL);
+
+	asteroidTexture.releaseTexture();
+	asteroidTexture.setTexture(NULL);
 	
 	font->Release();
 	font = NULL;
@@ -560,10 +574,11 @@ void update(int frames) {
 	{
 		// Sprite animation
 		if (diKeys[DIK_A] & 0x80) {
-			spaceshipRotation -= 0.07;
+			
+			/*spaceshipRotation -= 0.07;*/
 		}
 		if (diKeys[DIK_D] & 0x80) {
-			spaceshipRotation += 0.07;
+			/*spaceshipRotation += 0.07;*/
 		}
 		if (diKeys[DIK_LEFT] & 0x80) {
 			spaceship2Rotation -= 0.1;
@@ -571,24 +586,19 @@ void update(int frames) {
 		if (diKeys[DIK_RIGHT] & 0x80) {
 			spaceship2Rotation += 0.1;
 		}
-		spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
-		spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
+		//spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
+		//spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
+		//
+		//if (currentYpos > spaceshipPosition.y) {
+		//	spaceshipRotation = PI - asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
+		//}
+		//else {
+		//	spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
+		//}
 		
-		if (currentYpos > spaceshipPosition.y) {
-			spaceshipRotation = PI - asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
-		}
-		else {
-			spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
-		}
-		
-		if (diKeys[DIK_UP] & 0x80) {
-			spaceship2EngineForce.x = sin(spaceship2Rotation) * spaceship2EnginePower;
-			spaceship2EngineForce.y = -cos(spaceship2Rotation) * spaceship2EnginePower;
-			spaceship2Acceleration = spaceship2EngineForce / spaceship2Mass;
-		}
-		if (diKeys[DIK_SPACE] & 0x80) {
-			spaceshipEngineForce.x = sin(spaceshipRotation) * spaceshipEnginePower;
-			spaceshipEngineForce.y = -cos(spaceshipRotation) * spaceshipEnginePower;
+		if (diKeys[DIK_W] & 0x80) {
+			spaceshipEngineForce.x = sin(0) * spaceshipEnginePower;
+			spaceshipEngineForce.y = -cos(0) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 		}
 		spaceshipOldPosition = spaceshipPosition;
@@ -604,8 +614,8 @@ void update(int frames) {
 
 
 		//Spaceship right checking
-		if (spaceshipPosition.x > screenWidth - spriteSheets[1].getSpriteWidth()) {
-			spaceshipPosition.x = screenWidth - spriteSheets[1].getSpriteWidth();
+		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
+			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
 			spaceshipVelocity.x *= -1;
 		}
 		//Spaceship left checking
@@ -619,47 +629,27 @@ void update(int frames) {
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship bottom checking
-		if (spaceshipPosition.y > screenHeight - spriteSheets[1].getSpriteHeight()) {
-			spaceshipPosition.y = screenHeight - spriteSheets[1].getSpriteHeight();
+		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
+			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
 			spaceshipVelocity.y *= -1;
 		}
-		//Spaceship2 right checking
-		if (spaceship2Position.x > screenWidth - spriteSheets[2].getSpriteWidth()) {
-			spaceship2Position.x = screenWidth - spriteSheets[2].getSpriteWidth();
-			spaceship2Velocity.x *= -1;
-		}
-		//Spaceship2 left checking
-		if (spaceship2Position.x < 0) {
-			spaceship2Position.x = 0;
-			spaceship2Velocity.x *= -1;
-		}
-		//Spaceship2 top checking
-		if (spaceship2Position.y < 0) {
-			spaceship2Position.y = 0;
-			spaceship2Velocity.y *= -1;
-		}
-		//Spaceship2 bottom checking
-		if (spaceship2Position.y > screenHeight - spriteSheets[2].getSpriteHeight()) {
-			spaceship2Position.y = screenHeight - spriteSheets[2].getSpriteHeight();
-			spaceship2Velocity.y *= -1;
-		}
 		//Collision Detection
-		if (spaceshipPosition.x + spriteSheets[1].getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spriteSheets[2].getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spriteSheets[2].getSpriteHeight() && spaceshipPosition.y + spriteSheets[1].getSpriteHeight() >= spaceship2Position.y) {
+		//if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spriteSheets[2].getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spriteSheets[2].getSpriteHeight() && spaceshipPosition.y + spriteSheets[1].getSpriteHeight() >= spaceship2Position.y) {
 
-			//D3DXVec2Normalize(&normalizedSpaceshipVelocity, &spaceshipVelocity);
-			//D3DXVec2Normalize(&normalizedSpaceship2Velocity, &spaceship2Velocity);
-			spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass * spaceship2Velocity - spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
-			spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
+		//	//D3DXVec2Normalize(&normalizedSpaceshipVelocity, &spaceshipVelocity);
+		//	//D3DXVec2Normalize(&normalizedSpaceship2Velocity, &spaceship2Velocity);
+		//	spaceship2Velocity = (2 * spaceshipMass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) - (spaceshipMass * spaceship2Velocity - spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
+		//	spaceshipVelocity = (spaceshipMass * spaceshipVelocity - spaceship2Mass * spaceshipVelocity) / (spaceshipMass + spaceship2Mass) + (2 * spaceship2Mass * spaceship2Velocity) / (spaceshipMass + spaceship2Mass);
 
-			spaceshipPosition = spaceshipOldPosition;
-			spaceship2Position = spaceship2OldPosition;
-			spaceshipPosition += spaceshipVelocity;
-			spaceship2Position += spaceship2Velocity;
-			if (spaceshipPosition.x > screenWidth - spriteSheets[1].getSpriteWidth() || spaceshipPosition.x < 0 || spaceshipPosition.y < 0 || spaceshipPosition.y > screenHeight - spriteSheets[1].getSpriteHeight() || spaceship2Position.x > screenWidth - spriteSheets[2].getSpriteWidth() || spaceship2Position.x < 0 || spaceship2Position.y < 0 || spaceship2Position.y > screenHeight - spriteSheets[2].getSpriteHeight()) {
-				spaceshipPosition = spaceshipOldPosition;
-				spaceship2Position = spaceship2OldPosition;
-			}
-		}
+		//	spaceshipPosition = spaceshipOldPosition;
+		//	spaceship2Position = spaceship2OldPosition;
+		//	spaceshipPosition += spaceshipVelocity;
+		//	spaceship2Position += spaceship2Velocity;
+		//	if (spaceshipPosition.x > screenWidth - spriteSheets[1].getSpriteWidth() || spaceshipPosition.x < 0 || spaceshipPosition.y < 0 || spaceshipPosition.y > screenHeight - spriteSheets[1].getSpriteHeight() || spaceship2Position.x > screenWidth - spriteSheets[2].getSpriteWidth() || spaceship2Position.x < 0 || spaceship2Position.y < 0 || spaceship2Position.y > screenHeight - spriteSheets[2].getSpriteHeight()) {
+		//		spaceshipPosition = spaceshipOldPosition;
+		//		spaceship2Position = spaceship2OldPosition;
+		//	}
+		//}
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceship2Acceleration = D3DXVECTOR2(0, 0);
@@ -704,6 +694,12 @@ void updateBullet(int frames) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			cout << "shoot" << endl;
+		}
+		if (diKeys[DIK_A] & 0x80) {
+			spaceshipSprite.leftFrame();
+		}		
+		if (diKeys[DIK_D] & 0x80) {
+			spaceshipSprite.rightFrame();
 		}
 	}
 
