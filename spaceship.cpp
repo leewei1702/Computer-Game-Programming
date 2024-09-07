@@ -281,7 +281,7 @@ SpriteTransform pointerTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
-SpriteTransform bulletTrans[20];
+SpriteTransform bulletTrans[30];
 SpriteTransform asteroid1Trans;
 SpriteTransform asteroid2Trans;
 
@@ -389,6 +389,13 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
 	return 0;
+}
+
+void removeGap(int removedIndex) {
+	for (int i = removedIndex; i < bulletEntry; i++) {
+		bulletTrans[i] = bulletTrans[i + 1];
+	}
+	bulletEntry--;
 }
 
 void createWindow() {
@@ -678,6 +685,26 @@ void update(int frames) {
 			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
 			D3DXVECTOR2 bulletPos = bulletTrans[i].getTrans() += bulletVelocity;
 			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
+			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getSpriteWidth()) {
+				cout << "hit" << endl;
+				bulletTrans[i].getTrans().x = screenWidth - bulletSprite.getSpriteWidth();
+				removeGap(i);
+			}
+			if (bulletTrans[i].getTrans().x < 0) {
+				cout << "hit" << endl;
+				bulletTrans[i].getTrans().x = 0;
+				removeGap(i);
+			}
+			if (bulletTrans[i].getTrans().y < 0) {
+				cout << "hit" << endl;
+				bulletTrans[i].getTrans().y = 0;
+				removeGap(i);
+			}
+			if (bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getSpriteHeight()) {
+				cout << "hit" << endl;
+				bulletTrans[i].getTrans().y = screenHeight - bulletSprite.getSpriteHeight();
+				removeGap(i);
+			}
 		}
 
 		//Spaceship right checking
