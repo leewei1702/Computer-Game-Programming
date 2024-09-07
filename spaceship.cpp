@@ -107,11 +107,20 @@ public:
 	void setCurrentFrame(int currentFrame) {
 		this->currentFrame = currentFrame-1;
 	}
+	void staticFrame() {
+		currentFrame = 0;
+	}
 	void leftFrame() {
 		currentFrame = 2;
 	}
 	void rightFrame() {
 		currentFrame = 4;
+	}
+	void nextThrustFrame() {
+		currentFrame++;
+		if (currentFrame > maxFrame -1) {
+			currentFrame = 0;
+		}
 	}
 	void prevFrame() {
 		currentFrame--;
@@ -258,7 +267,7 @@ Texture asteroidTexture("Assets/asteroid.png");
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
 SpriteSheet pointerSprite(32, 32);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
-SpriteSheet thrustSprite(32, 10, 1, 2, 1, 2);
+SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet asteroidSprite(32, 10, 1, 2, 1, 2);
 
 //Default value for rgb color
@@ -573,31 +582,48 @@ void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
 		// Sprite animation
-		if (diKeys[DIK_W] & 0x80) {
-			spaceshipEngineForce.x += sin(0) * spaceshipEnginePower;
-			spaceshipEngineForce.y += -cos(0) * spaceshipEnginePower;
-			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+		if ((int)spaceshipVelocity.x == 0 && (int)spaceshipVelocity.y == 0) {
+			spaceshipSprite.staticFrame();
 		}
-
 		if (diKeys[DIK_A] & 0x80) {
 			spaceshipEngineForce.x += sin(270*PI/180) * spaceshipEnginePower;
 			spaceshipEngineForce.y += -cos(270 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
-			/*spaceshipRotation -= 0.07;*/
-		}
-		if (diKeys[DIK_S] & 0x80) {
-			spaceshipEngineForce.x += sin(180 * PI / 180) * spaceshipEnginePower;
-			spaceshipEngineForce.y += -cos(180 * PI / 180) * spaceshipEnginePower;
-			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+			spaceshipSprite.leftFrame();
 			/*spaceshipRotation -= 0.07;*/
 		}
 		if (diKeys[DIK_D] & 0x80) {
 			spaceshipEngineForce.x += sin(90 * PI / 180) * spaceshipEnginePower;
 			spaceshipEngineForce.y += -cos(90 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+			spaceshipSprite.rightFrame();
 			/*spaceshipRotation += 0.07;*/
 		}
-		
+		if (diKeys[DIK_W] & 0x80) {
+			spaceshipEngineForce.x += sin(0) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(0) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+			spaceshipSprite.staticFrame();
+		}
+		if (diKeys[DIK_S] & 0x80) {
+			spaceshipEngineForce.x += sin(180 * PI / 180) * spaceshipEnginePower;
+			spaceshipEngineForce.y += -cos(180 * PI / 180) * spaceshipEnginePower;
+			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
+			spaceshipSprite.staticFrame();
+			/*spaceshipRotation -= 0.07;*/
+		}
+		if (diKeys[DIK_A] & diKeys[DIK_W] & 0x80) {
+			spaceshipSprite.leftFrame();
+		}
+		if (diKeys[DIK_W] & diKeys[DIK_D] & 0x80) {
+			spaceshipSprite.rightFrame();
+		}
+		if (diKeys[DIK_S] & diKeys[DIK_A] & 0x80) {
+			spaceshipSprite.leftFrame();
+		}
+		if (diKeys[DIK_S] & diKeys[DIK_D] & 0x80) {
+			spaceshipSprite.rightFrame();
+		}
 		//spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
 		//spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
 		//
@@ -609,16 +635,10 @@ void update(int frames) {
 		//}
 	
 		spaceshipOldPosition = spaceshipPosition;
-		spaceship2OldPosition = spaceship2Position;
 
 		spaceshipVelocity += spaceshipAcceleration;
 		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
-
-		spaceship2Velocity += spaceship2Acceleration;
-		spaceship2Velocity *= (1 - friction);
-		spaceship2Position += spaceship2Velocity;
-
 
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
@@ -701,13 +721,8 @@ void updateBullet(int frames) {
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			cout << "shoot" << endl;
 		}
-		if (diKeys[DIK_A] & 0x80) {
-			spaceshipSprite.leftFrame();
-		}		
-		if (diKeys[DIK_D] & 0x80) {
-			spaceshipSprite.rightFrame();
-		}
 	}
+	thrustSprite.nextThrustFrame();
 
 }
 void Sound() {
