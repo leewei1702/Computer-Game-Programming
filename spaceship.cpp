@@ -392,7 +392,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 }
 
 void removeGap(int removedIndex) {
-	for (int i = removedIndex; i < bulletEntry; i++) {
+	for (int i = removedIndex; i < bulletEntry - 1; i++) {
 		bulletTrans[i] = bulletTrans[i + 1];
 	}
 	bulletEntry--;
