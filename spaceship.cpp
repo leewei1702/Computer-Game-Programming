@@ -368,7 +368,7 @@ float turretCenterY;
 D3DXVECTOR2 bulletPosition;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
-float bulletPower = 50;
+float bulletPower = 10;
 
 boolean toggleShoot = false;
 
@@ -674,10 +674,10 @@ void update(int frames) {
 		spaceshipPosition += spaceshipVelocity;
 
 		for (int i = 0; i < bulletEntry; i++) {
-			bulletVelocity.x = sin(bulletTrans[bulletEntry].getRotation()) * bulletPower;
-			bulletVelocity.y = -cos(bulletTrans[bulletEntry].getRotation()) * bulletPower;
-			D3DXVECTOR2 bulletpos = bulletTrans[bulletEntry].getTrans() += bulletVelocity;
-			bulletTrans[bulletEntry].setTrans(bulletpos);
+			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
+			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
+			D3DXVECTOR2 bulletPos = bulletTrans[i].getTrans() += bulletVelocity;
+			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
 		}
 
 		//Spaceship right checking
