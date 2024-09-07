@@ -1,0 +1,53 @@
+﻿  program.cpp
+  C:\Program Files (x86)\Microsoft DirectX SDK (June 2010)\include\dinput.h: DIRECTINPUT_VERSION undefined. Defaulting to version 0x0800
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(331,17): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(334,16): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(356,26): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(396,3): warning C4065: switch statement contains 'default' but no 'case' labels
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(471,132): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(471,88): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(474,124): warning C4244: 'argument': conversion from 'LONG' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(474,111): warning C4244: 'argument': conversion from 'LONG' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(475,119): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(475,80): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(475,231): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(475,192): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,113): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,77): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,219): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,183): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,343): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(476,308): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,110): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,74): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,137): warning C4305: 'argument': truncation from 'double' to 'FLOAT'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,131): warning C4305: 'argument': truncation from 'double' to 'FLOAT'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,222): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(477,186): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(520,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(524,20): warning C4018: '<': signed/unsigned mismatch
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(652,23): warning C4305: '+=': truncation from 'double' to 'float'
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(672,37): warning C4244: '+=': conversion from 'double' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(673,38): warning C4244: '+=': conversion from 'double' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(707,125): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(707,84): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(707,241): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(707,200): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(710,47): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(725,48): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(735,37): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(743,37): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(750,38): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(765,39): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(805,31): warning C4244: '=': conversion from 'LONG' to 'float', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(806,31): warning C4244: '=': conversion from 'LONG' to 'float', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(811,23): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(814,24): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(856,57): warning C4805: '==': unsafe mix of type 'boolean' and type 'bool' in operation
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(858,135): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(858,94): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(858,251): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(858,210): warning C4244: 'argument': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(869,31): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+C:\Users\Lee\Desktop\Spaceship Game\Spaceship Game\program.cpp(881,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+  Spaceship Game.vcxproj -> C:\Users\Lee\Desktop\Spaceship Game\Debug\Spaceship Game.exe
