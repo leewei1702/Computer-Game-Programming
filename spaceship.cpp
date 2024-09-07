@@ -56,17 +56,21 @@ public:
 		this->maxFrame = maxFrame;
 		this->spriteWidth = totalSpriteWidth / spriteCol;
 		this->spriteHeight = totalSpriteHeight / spriteRow;
-		spriteRect.left = 0;
-		spriteRect.right = 0;
 		spriteRect.top = 0;
+		spriteRect.right = 0;
 		spriteRect.bottom = 0;
+		spriteRect.left = 0;
 	}
-	SpriteSheet(int spriteRectLeft, int spriteRectRight, int spriteRectTop, int spriteRectBottom) {
-		spriteRect.left = spriteRectLeft;
-		spriteRect.right = spriteRectRight;
-		spriteRect.top = spriteRectTop;
-		spriteRect.bottom = spriteRectBottom;
+
+	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight) {
+		this->totalSpriteWidth = totalSpriteWidth;
+		this->totalSpriteHeight = totalSpriteHeight;
+		spriteRect.top = 0;
+		spriteRect.right = 0;
+		spriteRect.bottom = 0;
+		spriteRect.left = 0;
 	}
+
 	int getTotalSpriteWidth() {
 		return totalSpriteWidth;
 	}
@@ -113,6 +117,13 @@ public:
 		}
 	}
 	RECT& crop() {
+		if (spriteRow == NULL || spriteCol == NULL) {
+			spriteRect.left = 0;
+			spriteRect.right = totalSpriteWidth;
+			spriteRect.top = 0;
+			spriteRect.bottom = totalSpriteHeight;
+			return spriteRect;
+		}
 		spriteRect.left = currentFrame % spriteCol * spriteWidth;
 		spriteRect.right = spriteRect.left + spriteWidth;
 		spriteRect.top = currentFrame % maxFrame / spriteRow * spriteHeight;
@@ -227,19 +238,27 @@ public:
 	void setTexture(LPDIRECT3DTEXTURE9 texture) {
 		this->texture = texture;
 	}
+	void releaseTexture() {
+		texture->Release();
+	}
 };
 
 //Textures
-Texture pointer("Assets/pointer.png");
-Texture spaceship("Assets/practical9.png");
-Texture spaceship2("Assets/practical9.png");
+Texture textures[] = { 
+	Texture("Assets/pointer.png"), 
+	Texture("Assets/practical9.png"),
+	Texture("Assets/practical9.png"),
+};
 
 //Spritesheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
+//                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet spaceshipSprite(64, 64, 2, 2, 1, 4);
-SpriteSheet spaceshipSprite2(64, 64, 2, 2, 2, 4);
-
+SpriteSheet spriteSheets[] = {
+	SpriteSheet(32, 32),                    //Pointer Sprite
+	SpriteSheet(64, 64, 2, 2, 1, 4),        //Spaceship Sprite
+	SpriteSheet(64, 64, 2, 2, 2, 4)         //Spaceship2 Sprite
+};
 
 //Default value for rgb color
 int red = 0;
@@ -276,14 +295,15 @@ BYTE  diKeys[256];
 
 // FrameTimer Object
 FrameTimer* gameTimer = new FrameTimer();
+FrameTimer* bulletTimer = new FrameTimer();
 // Audio Object
 AudioManager* myAudioManager = new AudioManager();
 
 //PI
-float PI = 3.142;
+float static PI = 3.142;
 
 //Friction
-float friction = 0.01; //(1,1) = no friction
+float friction = 0.01; //1 = no friction
 
 //Normalize
 D3DXVECTOR2 normalizedSpaceshipVelocity;
@@ -315,6 +335,7 @@ float spaceship2Mass = 500;
 
 float spaceshipCursorDistanceX;
 float spaceshipCursorDistance;
+boolean toggleShoot = false;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -391,9 +412,13 @@ void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
-	SpriteTransform pointerTrans(D3DXVECTOR2(0,0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0,0), 0, D3DXVECTOR2(currentXpos, currentYpos));
-	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
-	SpriteTransform spaceship2Trans(D3DXVECTOR2(spaceshipSprite2.getSpriteWidth() / 2, spaceshipSprite2.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite2.getSpriteWidth() / 2, spaceshipSprite2.getSpriteHeight() / 2), spaceship2Rotation, spaceship2Position);
+
+	SpriteTransform spriteTransforms[]{
+		SpriteTransform(D3DXVECTOR2(0,0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0,0), 0, D3DXVECTOR2(currentXpos, currentYpos)),
+		SpriteTransform(D3DXVECTOR2(spriteSheets[1].getSpriteWidth() / 2, spriteSheets[1].getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spriteSheets[1].getSpriteWidth() / 2, spriteSheets[1].getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition),
+		SpriteTransform(D3DXVECTOR2(spriteSheets[2].getSpriteWidth() / 2, spriteSheets[2].getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spriteSheets[2].getSpriteWidth() / 2, spriteSheets[2].getSpriteHeight() / 2), spaceship2Rotation, spaceship2Position),
+	};
+
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 
 	//Text
@@ -402,26 +427,12 @@ void spriteRender() {
 	textRect.right = 300;
 	textRect.bottom = 125;
 
-	//Pointer
-	pointerTrans.transform();
-
-	sprite->SetTransform(&pointerTrans.getMat());
-
-	sprite->Draw(pointer.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
-
-	//Spaceship
-	spaceshipTrans.transform();
-
-	sprite->SetTransform(&spaceshipTrans.getMat());
-
-	sprite->Draw(spaceship.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
-
-	//Spaceship2
-	spaceship2Trans.transform();
-
-	sprite->SetTransform(&spaceship2Trans.getMat());
-
-	sprite->Draw(spaceship2.getTexture(), &spaceshipSprite2.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	
+	for (int i = 0; i < sizeof(spriteTransforms) / sizeof(spriteTransforms[0]); i++) {
+		spriteTransforms[i].transform();
+		sprite->SetTransform(&spriteTransforms[i].getMat());
+		sprite->Draw(textures[i].getTexture(), &spriteSheets[i].crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	}
 
 	//Draw Mouse Position Font
 	textTrans.transform();
@@ -478,10 +489,11 @@ void createSprite() {
 	if (FAILED(hr)) {
 		cout << "Create Font Failed!!!";
 	}
-
-	hr = pointer.createTextureFromFile();
-	hr = spaceship.createTextureFromFile();
-	hr = spaceship2.createTextureFromFile();
+	
+	for (int i = 0; i < sizeof(textures) / sizeof(textures[0]); i++) {
+		hr = textures[i].createTextureFromFile();
+	}
+	
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -492,12 +504,12 @@ void cleanupSprite() {
 	sprite->Release();
 	sprite = NULL;
 
-	pointer.getTexture()->Release();
-	pointer = NULL;
-
-	spaceship.getTexture()->Release();
-	spaceship = NULL;
-
+	
+	for (int i = 0; i < sizeof(textures) / sizeof(textures[0]); i++) {
+		textures[i].releaseTexture();
+		textures[i].setTexture(NULL);
+	}
+	
 	font->Release();
 	font = NULL;
 }
@@ -568,9 +580,6 @@ void update(int frames) {
 		else {
 			spaceshipRotation = asin(spaceshipCursorDistanceX / spaceshipCursorDistance);
 		}
-
-		
-		
 		
 		if (diKeys[DIK_UP] & 0x80) {
 			spaceship2EngineForce.x = sin(spaceship2Rotation) * spaceship2EnginePower;
@@ -595,8 +604,8 @@ void update(int frames) {
 
 
 		//Spaceship right checking
-		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
-			spaceshipPosition.x = screenWidth - spaceshipSprite.getSpriteWidth();
+		if (spaceshipPosition.x > screenWidth - spriteSheets[1].getSpriteWidth()) {
+			spaceshipPosition.x = screenWidth - spriteSheets[1].getSpriteWidth();
 			spaceshipVelocity.x *= -1;
 		}
 		//Spaceship left checking
@@ -610,13 +619,13 @@ void update(int frames) {
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship bottom checking
-		if (spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight()) {
-			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
+		if (spaceshipPosition.y > screenHeight - spriteSheets[1].getSpriteHeight()) {
+			spaceshipPosition.y = screenHeight - spriteSheets[1].getSpriteHeight();
 			spaceshipVelocity.y *= -1;
 		}
 		//Spaceship2 right checking
-		if (spaceship2Position.x > screenWidth - spaceshipSprite2.getSpriteWidth()) {
-			spaceship2Position.x = screenWidth - spaceshipSprite2.getSpriteWidth();
+		if (spaceship2Position.x > screenWidth - spriteSheets[2].getSpriteWidth()) {
+			spaceship2Position.x = screenWidth - spriteSheets[2].getSpriteWidth();
 			spaceship2Velocity.x *= -1;
 		}
 		//Spaceship2 left checking
@@ -630,12 +639,12 @@ void update(int frames) {
 			spaceship2Velocity.y *= -1;
 		}
 		//Spaceship2 bottom checking
-		if (spaceship2Position.y > screenHeight - spaceshipSprite2.getSpriteHeight()) {
-			spaceship2Position.y = screenHeight - spaceshipSprite2.getSpriteHeight();
+		if (spaceship2Position.y > screenHeight - spriteSheets[2].getSpriteHeight()) {
+			spaceship2Position.y = screenHeight - spriteSheets[2].getSpriteHeight();
 			spaceship2Velocity.y *= -1;
 		}
 		//Collision Detection
-		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spaceshipSprite2.getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spaceshipSprite2.getSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= spaceship2Position.y) {
+		if (spaceshipPosition.x + spriteSheets[1].getSpriteWidth() >= spaceship2Position.x && spaceshipPosition.x <= spaceship2Position.x + spriteSheets[2].getSpriteWidth() && spaceshipPosition.y <= spaceship2Position.y + spriteSheets[2].getSpriteHeight() && spaceshipPosition.y + spriteSheets[1].getSpriteHeight() >= spaceship2Position.y) {
 
 			//D3DXVec2Normalize(&normalizedSpaceshipVelocity, &spaceshipVelocity);
 			//D3DXVec2Normalize(&normalizedSpaceship2Velocity, &spaceship2Velocity);
@@ -646,7 +655,7 @@ void update(int frames) {
 			spaceship2Position = spaceship2OldPosition;
 			spaceshipPosition += spaceshipVelocity;
 			spaceship2Position += spaceship2Velocity;
-			if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth() || spaceshipPosition.x < 0 || spaceshipPosition.y < 0 || spaceshipPosition.y > screenHeight - spaceshipSprite.getSpriteHeight() || spaceship2Position.x > screenWidth - spaceshipSprite2.getSpriteWidth() || spaceship2Position.x < 0 || spaceship2Position.y < 0 || spaceship2Position.y > screenHeight - spaceshipSprite2.getSpriteHeight()) {
+			if (spaceshipPosition.x > screenWidth - spriteSheets[1].getSpriteWidth() || spaceshipPosition.x < 0 || spaceshipPosition.y < 0 || spaceshipPosition.y > screenHeight - spriteSheets[1].getSpriteHeight() || spaceship2Position.x > screenWidth - spriteSheets[2].getSpriteWidth() || spaceship2Position.x < 0 || spaceship2Position.y < 0 || spaceship2Position.y > screenHeight - spriteSheets[2].getSpriteHeight()) {
 				spaceshipPosition = spaceshipOldPosition;
 				spaceship2Position = spaceship2OldPosition;
 			}
@@ -654,11 +663,11 @@ void update(int frames) {
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceship2Acceleration = D3DXVECTOR2(0, 0);
+
 	}
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
 		//do something
-		cout << spaceshipRotation << endl;
 	}
 	//Right click
 	if (mouseState.rgbButtons[1] & 0x80) {
@@ -682,6 +691,23 @@ void update(int frames) {
 	}
 }
 
+void updateBullet(int frames) {
+
+	if (diKeys[DIK_X] & 0x80) {
+		toggleShoot = true;
+	}
+	if (diKeys[DIK_Z] & 0x80) {
+		toggleShoot = false;
+	}
+
+	for (int i = 0; i < frames; i++) {
+		//Left click
+		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
+			cout << "shoot" << endl;
+		}
+	}
+
+}
 void Sound() {
 	myAudioManager->UpdateSound();
 }
@@ -690,6 +716,8 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 {
 	gameTimer->init(50);
 
+	bulletTimer->init(2);
+
 	createWindow();
 
 	createDirectX();
@@ -697,17 +725,16 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	createSprite();
 
 	createDirectInput();
-
+	myAudioManager->InitializeAudio();
+	myAudioManager->LoadSounds();
+	myAudioManager->PlaySound1();
 
 	while (windowIsRunning())
 	{
-
-		myAudioManager->InitializeAudio();
-		myAudioManager->LoadSounds();
-		myAudioManager->PlaySound1();
 		getInput();
 		//Physics();
 		update(gameTimer->FramesToUpdate());
+		updateBullet(bulletTimer->FramesToUpdate());
 		render();
 		Sound();
 
