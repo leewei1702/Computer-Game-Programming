@@ -172,6 +172,9 @@ public:
 		this->rotation = rotation;
 		this->trans = trans;
 	}
+	SpriteTransform() {
+
+	}
 	D3DXMATRIX& getMat() {
 		return mat;
 	}
@@ -184,7 +187,7 @@ public:
 	D3DXVECTOR2& getScaling() {
 		return scaling;
 	}
-	D3DXVECTOR2& getrotationCenter() {
+	D3DXVECTOR2& getRotationCenter() {
 		return rotationCenter;
 	}
 	float getRotation() {
@@ -256,21 +259,31 @@ public:
 };
 
 //Textures
-Texture pointerTexture("Assets/pointer.png");
+Texture pointerTexture("Assets/crosshair.png");
 Texture spaceshipTexture("Assets/ship.png");
 Texture thrustTexture("Assets/thrust.png");
 Texture turretTexture("Assets/turret.png");
 Texture asteroidTexture("Assets/asteroid.png");
+Texture bulletTexture("Assets/bullet.png");
 
 //Spritesheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet pointerSprite(32, 32);
+SpriteSheet pointerSprite(20,20);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
 SpriteSheet asteroidSprite(32, 10, 1, 2, 1, 2);
+SpriteSheet bulletSprite(16, 28);
+
+SpriteTransform pointerTrans;
+SpriteTransform spaceshipTrans;
+SpriteTransform thrustTrans;
+SpriteTransform turretTrans;
+SpriteTransform bulletTrans[10];
+SpriteTransform asteroid1Trans;
+SpriteTransform asteroid2Trans;
 
 //Default value for rgb color
 int red = 0;
@@ -347,6 +360,11 @@ float spaceship2Mass = 500;
 
 D3DXVECTOR2 turretPosition;
 float turretRotation;
+float pointerCenterX;
+float pointerCenterY;
+float turretCenterX;
+float turretCenterY;
+D3DXVECTOR2 bulletPosition;
 
 boolean toggleShoot = false;
 
@@ -424,13 +442,14 @@ void createDirectX() {
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 	turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
+	bulletPosition = D3DXVECTOR2(spaceshipPosition.x + spaceshipSprite.getSpriteWidth() / 2 - 5, spaceshipPosition.y + spaceshipSprite.getSpriteHeight() / 2 - 5);
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
-	SpriteTransform pointerTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
-	SpriteTransform spaceshipTrans(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
-	SpriteTransform thrustTrans(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
-	SpriteTransform turretTrans(D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(0.35, 0.35), D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), turretRotation, turretPosition);
-	SpriteTransform asteroid1Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(100, 500));
-	SpriteTransform asteroid2Trans(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(700, 700));
+    pointerTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	spaceshipTrans = SpriteTransform(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
+    thrustTrans = SpriteTransform(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
+	turretTrans = SpriteTransform(D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(0.35, 0.35), D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), turretRotation, turretPosition);
+    asteroid1Trans = SpriteTransform(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(100, 500));
+	asteroid2Trans = SpriteTransform(D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(asteroidSprite.getSpriteWidth() / 2, asteroidSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(700, 700));
 
 
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
@@ -457,6 +476,11 @@ void spriteRender() {
 	sprite->SetTransform(&turretTrans.getMat());
 	sprite->Draw(turretTexture.getTexture(), &turretSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
+	if (bulletTrans != NULL) {
+		bulletTrans[0].transform();
+		sprite->SetTransform(&bulletTrans[0].getMat());
+		sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	}
 
 	//Draw Mouse Position Font
 	textTrans.transform();
@@ -519,6 +543,7 @@ void createSprite() {
 	hr = spaceshipTexture.createTextureFromFile();
 	hr = turretTexture.createTextureFromFile();
 	hr = asteroidTexture.createTextureFromFile();
+	hr = bulletTexture.createTextureFromFile();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -543,6 +568,9 @@ void cleanupSprite() {
 
 	asteroidTexture.releaseTexture();
 	asteroidTexture.setTexture(NULL);
+
+	bulletTexture.releaseTexture();
+	bulletTexture.setTexture(NULL);
 	
 	font->Release();
 	font = NULL;
@@ -635,16 +663,6 @@ void update(int frames) {
 		if (diKeys[DIK_S] & diKeys[DIK_D] & 0x80) {
 			spaceshipSprite.rightFrame();
 		}
-		//spaceshipCursorDistanceX = currentXpos - spaceshipPosition.x;
-		//spaceshipCursorDistance = sqrt(pow(currentXpos - spaceshipPosition.x, 2) + pow(spaceshipPosition.y - currentYpos, 2));
-		//
-		if (currentYpos > turretPosition.y) {
-			turretRotation = PI - asin((currentXpos - turretPosition.x) / sqrt(pow(currentXpos - turretPosition.x, 2) + pow(turretPosition.y - currentYpos, 2)));
-		
-		}
-		else {
-			turretRotation = asin((currentXpos - turretPosition.x) / sqrt(pow(currentXpos - turretPosition.x, 2) + pow(turretPosition.y - currentYpos, 2)));
-		}
 	
 		spaceshipOldPosition = spaceshipPosition;
 
@@ -693,6 +711,21 @@ void update(int frames) {
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
 	}
+	
+	pointerCenterX = currentXpos + pointerSprite.getTotalSpriteWidth() / 2;
+	pointerCenterY = currentYpos + pointerSprite.getTotalSpriteHeight() / 2;
+	turretCenterX = turretPosition.x + turretSprite.getSpriteWidth() / 2;
+	turretCenterY = turretPosition.y + turretSprite.getSpriteHeight() / 2;
+
+	if (pointerCenterY > turretCenterY) {
+		turretRotation = PI - asin((pointerCenterX - turretCenterX)/ sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
+	}
+	else {
+		turretRotation = asin((pointerCenterX - turretCenterX) / sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
+	}
+
+
+
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
 		//do something
@@ -732,6 +765,8 @@ void updateBullet(int frames) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			cout << "shoot" << endl;
+			bulletTrans[0] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletPosition);
+			myAudioManager->PlaySoundTrack();
 		}
 	}
 	thrustSprite.nextThrustFrame();
