@@ -863,7 +863,9 @@ void updateBullet(int frames) {
 	
 }
 void updateThrust(int frames) {
-	thrustSprite.nextThrustFrame();
+	for (int i = 0; i < frames; i++) {
+		thrustSprite.nextThrustFrame();
+	}
 }
 void updateAsteroid(int frames) {
 	asteroidStartPosition.x = 50 + (rand() % 1200);
@@ -884,7 +886,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	bulletTimer->init(10);
 
-	thrustTimer->init(1);
+	thrustTimer->init(4);
 
 	asteroidTimer->init(10);
 
