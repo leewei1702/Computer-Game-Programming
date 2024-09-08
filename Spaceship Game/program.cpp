@@ -659,14 +659,12 @@ void update(int frames) {
 			spaceshipEngineForce.y += -cos(270 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			spaceshipSprite.leftFrame();
-			/*spaceshipRotation -= 0.07;*/
 		}
 		if (diKeys[DIK_D] & 0x80) {
 			spaceshipEngineForce.x += sin(90 * PI / 180) * spaceshipEnginePower;
 			spaceshipEngineForce.y += -cos(90 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			spaceshipSprite.rightFrame();
-			/*spaceshipRotation += 0.07;*/
 		}
 		if (diKeys[DIK_W] & 0x80) {
 			spaceshipEngineForce.x += sin(0) * spaceshipEnginePower;
@@ -679,18 +677,17 @@ void update(int frames) {
 			spaceshipEngineForce.y += -cos(180 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			spaceshipSprite.staticFrame();
-			/*spaceshipRotation -= 0.07;*/
 		}
-		if (diKeys[DIK_A] & diKeys[DIK_W] & 0x80) {
+		if ((diKeys[DIK_A] & 0x80) && (diKeys[DIK_W] & 0x80)) {
 			spaceshipSprite.leftFrame();
 		}
-		if (diKeys[DIK_W] & diKeys[DIK_D] & 0x80) {
+		if ((diKeys[DIK_W] & 0x80) && (diKeys[DIK_D] & 0x80)) {
 			spaceshipSprite.rightFrame();
 		}
-		if (diKeys[DIK_S] & diKeys[DIK_A] & 0x80) {
+		if ((diKeys[DIK_S] & 0x80) && (diKeys[DIK_A] & 0x80)) {
 			spaceshipSprite.leftFrame();
 		}
-		if (diKeys[DIK_S] & diKeys[DIK_D] & 0x80) {
+		if ((diKeys[DIK_S] & 0x80) && (diKeys[DIK_D] & 0x80)) {
 			spaceshipSprite.rightFrame();
 		}
 	
@@ -705,24 +702,7 @@ void update(int frames) {
 			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
 		    bulletPos = bulletTrans[i].getTrans() + bulletVelocity;
 			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
-			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth()) {
-				cout << "hit" << endl;
-				bulletTrans[i].getTrans().x = screenWidth - bulletSprite.getTotalSpriteWidth();
-				removeBulletGap(i);
-			}
-			if (bulletTrans[i].getTrans().x < 0) {
-				cout << "hit" << endl;
-				bulletTrans[i].getTrans().x = 0;
-				removeBulletGap(i);
-			}
-			if (bulletTrans[i].getTrans().y < 0) {
-				cout << "hit" << endl;
-				bulletTrans[i].getTrans().y = 0;
-				removeBulletGap(i);
-			}
-			if (bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
-				cout << "hit" << endl;
-				bulletTrans[i].getTrans().y = screenHeight - bulletSprite.getTotalSpriteHeight();
+			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
 				removeBulletGap(i);
 			}
 		}
@@ -731,16 +711,7 @@ void update(int frames) {
 			asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
 			asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
 			asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
-			if (asteroidTrans[i].getTrans().x > screenWidth) {
-				asteroidTrans[i].getTrans().x = screenWidth;
-				removeAsteroidGap(i);
-			}
-			if (asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth()) {
-				asteroidTrans[i].getTrans().x = 0;
-				removeAsteroidGap(i);
-			}
-			if (asteroidTrans[i].getTrans().y > screenHeight) {
-				asteroidTrans[i].getTrans().y = screenHeight;
+			if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
 				removeAsteroidGap(i);
 			}
 		}
@@ -828,13 +799,13 @@ void update(int frames) {
 		PostQuitMessage(0);
 	}
 	//Mouse position
-	if (currentYpos >= 0 || currentYpos <= screenHeight - pointerSprite.getTotalSpriteHeight()) {
+	if (currentYpos >= 0 && currentYpos <= screenHeight - pointerSprite.getTotalSpriteHeight()) {
 		currentYpos += mouseState.lY;
 	}
 	if (currentYpos < 0 || currentYpos > screenHeight - pointerSprite.getTotalSpriteHeight()) {
 		currentYpos -= mouseState.lY;
 	}
-	if (currentXpos >= 0 || currentXpos <= screenWidth - pointerSprite.getTotalSpriteWidth()) {
+	if (currentXpos >= 0 && currentXpos <= screenWidth - pointerSprite.getTotalSpriteWidth()) {
 		currentXpos += mouseState.lX;
 	}
 	if (currentXpos < 0 || currentXpos > screenWidth - pointerSprite.getTotalSpriteWidth()) {
@@ -884,7 +855,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	gameTimer->init(50);
 
-	bulletTimer->init(10);
+	bulletTimer->init(3);
 
 	thrustTimer->init(4);
 
