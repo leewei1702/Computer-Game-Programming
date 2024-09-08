@@ -323,7 +323,14 @@ int waveMin;
 //Variable to show timer text
 string strWaveSec;
 string strWaveMin;
-char timerText[5];
+char timerText[15];
+
+//Spaceship Live
+int lives = 3;
+//Variable to show lives text
+string strLivesPrefix = "Lives: ";
+string strLivesPostfix;
+char livesText[15];
 
 //	Key input buffer
 BYTE  diKeys[256];
@@ -425,6 +432,14 @@ void removeAsteroidGap(int removedIndex) {
 	asteroidEntry--;
 }
 
+void resetStage() {
+	lives = 3;
+	waveSec = 0;
+	waveMin = 0;
+	asteroidEntry = 0;
+	bulletEntry = 0;
+}
+
 void createWindow() {
 
 	ZeroMemory(&wndStruct.wndClass, sizeof(wndStruct.wndClass));
@@ -489,6 +504,7 @@ void spriteRender() {
 
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 	SpriteTransform timerTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
+	SpriteTransform livesTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
 
 	//Text
 	textRect.left = 0;
@@ -499,7 +515,7 @@ void spriteRender() {
 	//Timer Text
 	timerTextRect.left = 0;
 	timerTextRect.top = 0;
-	timerTextRect.right = 400;
+	timerTextRect.right = 500;
 	timerTextRect.bottom = 125;
 
 	//Draw Sprite
@@ -557,14 +573,30 @@ void spriteRender() {
 	for (int i = 0; i < strWaveMin.length(); i++) {
 		timerText[i] = strWaveMin[i];
 	}
-	timerText[2] = ':';
+	timerText[strWaveMin.length()] = ':';
 	for (int i = 0; i < strWaveSec.length(); i++) {
-		timerText[i + 3] = strWaveSec[i];
+		timerText[i + strWaveMin.length() + 1] = strWaveSec[i];
 	}
 	font->DrawText(sprite, timerText, -1, &timerTextRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	for (int i = 0; i < sizeof(timerText); i++) {
 		timerText[i] = ' ';
+	}
+	//Draw Lives Font
+	livesTextTrans.transform();
+
+	sprite->SetTransform(&livesTextTrans.getMat());
+	strLivesPostfix = to_string(lives);
+	for (int i = 0; i < strLivesPrefix.length(); i++) {
+		livesText[i] = strLivesPrefix[i];
+	}
+	for (int i = 0; i < strLivesPostfix.length(); i++) {
+		livesText[i + strLivesPrefix.length()] = strLivesPostfix[i];
+	}
+	font->DrawText(sprite, livesText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	for (int i = 0; i < sizeof(livesText); i++) {
+		livesText[i] = ' ';
 	}
 
 	sprite->End();
@@ -735,10 +767,16 @@ void update(int frames) {
 
 		for (int i = 0; i < asteroidEntry; i++) {
 			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
-				myAudioManager->PlaySad();
-				ShowCursor(true);
-				MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
-				PostQuitMessage(0);
+				removeAsteroidGap(i);
+				if (lives > 0) {
+					lives--;
+				}
+				if (lives <= 0) {
+					myAudioManager->PlaySad();
+					//ShowCursor(true);
+					//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
+					resetStage();
+				}
 			}
 		}
 
