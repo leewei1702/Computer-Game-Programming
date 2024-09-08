@@ -32,6 +32,14 @@ void AudioManager::PlaySad()
 	//channel->setPaused(false);
 }
 
+void AudioManager::PlayHit()
+{
+	result = system->playSound(sound4, 0, false, &channel4);
+	//channel->setVolume(1);
+	//channel->setPan(0);
+	//channel->setPaused(false);
+}
+
 
 void AudioManager::LoadSounds()
 {
@@ -39,11 +47,14 @@ void AudioManager::LoadSounds()
 	result = system->createSound("Assets/Sound/fallen-down.mp3", FMOD_DEFAULT, 0, &sound1);
 	result = sound1->setMode(FMOD_LOOP_OFF);
 
-	result = system->createStream("Assets/Sound/shoot.wav", FMOD_DEFAULT, 0, &sound2);
+	result = system->createSound("Assets/Sound/shoot.wav", FMOD_DEFAULT, 0, &sound2);
 	result = sound2->setMode(FMOD_LOOP_OFF);
 
-	result = system->createStream("Assets/Sound/sad.mp3", FMOD_DEFAULT, 0, &sound3);
+	result = system->createSound("Assets/Sound/sad.mp3", FMOD_DEFAULT, 0, &sound3);
 	result = sound3->setMode(FMOD_LOOP_OFF);
+
+	result = system->createSound("Assets/Sound/hit.wav", FMOD_DEFAULT, 0, &sound4);
+	result = sound4->setMode(FMOD_LOOP_OFF);
 }
 
 void AudioManager::UpdateSound()
