@@ -401,6 +401,7 @@ D3DXVECTOR2 asteroidPosition;
 boolean toggleShoot = false;
 queue<int> asteroidIndexToRemove;
 
+boolean gamePaused;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -441,6 +442,8 @@ void resetStage() {
 	waveMin = 0;
 	asteroidEntry = 0;
 	bulletEntry = 0;
+	spaceshipPosition = D3DXVECTOR2(600, 600);
+	spaceshipVelocity = D3DXVECTOR2(0, 0);
 	while (!bulletIndexToRemove.empty()) {
 		bulletIndexToRemove.pop();
 	}
@@ -779,14 +782,14 @@ void update(int frames) {
 			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
 				asteroidIndexToRemove.push(i);
 				if (lives > 0) {
+					myAudioManager->PlayHit();
 					lives--;
 				}
 				if (lives <= 0) {
-					myAudioManager->PlaySad();
 					//ShowCursor(true);
 					//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
+					//gamePaused = true;
 					resetStage();
-					
 				}
 			}
 		}
@@ -920,7 +923,6 @@ void updateBullet(int frames) {
 	for (int i = 0; i < frames; i++) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
-			cout << "shoot" << endl;
 			bulletTrans[bulletEntry] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletStartPosition);
 			bulletEntry++;
 			myAudioManager->PlaySoundTrack();
@@ -958,16 +960,15 @@ void Sound() {
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
-
-	gameTimer->init(50);
+	asteroidTimer->init(3);
 
 	bulletTimer->init(5);
 
 	thrustTimer->init(4);
 
-	asteroidTimer->init(10);
-
 	waveTimer->init(1);
+
+	gameTimer->init(50);
 
 	createWindow();
 
@@ -984,11 +985,13 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	{
 		getInput();
 		//Physics();
-		update(gameTimer->FramesToUpdate());
-		updateBullet(bulletTimer->FramesToUpdate());
-		updateThrust(thrustTimer->FramesToUpdate());
-		updateAsteroid(asteroidTimer->FramesToUpdate());
-		updateWave(waveTimer->FramesToUpdate());
+		if (!gamePaused) {
+			update(gameTimer->FramesToUpdate());
+			updateBullet(bulletTimer->FramesToUpdate());
+			updateThrust(thrustTimer->FramesToUpdate());
+			updateAsteroid(asteroidTimer->FramesToUpdate());
+			updateWave(waveTimer->FramesToUpdate());
+		}
 		render();
 		Sound();
 
