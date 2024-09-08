@@ -387,6 +387,7 @@ float turretCenterX;
 float turretCenterY;
 D3DXVECTOR2 bulletStartPosition;
 D3DXVECTOR2 bulletPos;
+int bulletInterval = 5;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
@@ -401,7 +402,9 @@ D3DXVECTOR2 asteroidPosition;
 boolean toggleShoot = false;
 queue<int> asteroidIndexToRemove;
 
-boolean gamePaused;
+boolean timeStop;
+int timeStopDuration = 10;
+int timeStopDurationLeft = timeStopDuration;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -413,9 +416,26 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 	case WM_KEYDOWN:
 		switch (wParam)
 		{
+		case 0x58: //X key
+			if (!toggleShoot) {
+				toggleShoot = true;
+			}
+			else {
+				toggleShoot = false;
+			}
+			break;
+		case 0x56:  //V key
+			if (!timeStop) {
+				timeStop = true;
+			}
+			else {
+				timeStop = false;
+			}
+			break;
 		default:
 			break;
 		}
+		break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -517,6 +537,7 @@ void spriteRender() {
 	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
 	SpriteTransform timerTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
 	SpriteTransform livesTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
+	SpriteTransform helpTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 35));
 
 	//Text
 	textRect.left = 0;
@@ -610,6 +631,11 @@ void spriteRender() {
 	for (int i = 0; i < sizeof(livesText); i++) {
 		livesText[i] = ' ';
 	}
+	//Draw Help Font
+	helpTextTrans.transform();
+
+	sprite->SetTransform(&helpTextTrans.getMat());
+	font->DrawText(sprite, "Press X to toggle the shooting", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	sprite->End();
 }
@@ -729,7 +755,9 @@ void cleanupInput() {
 void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
-		asteroidRotation += 0.05;
+		if (!timeStop) {
+			asteroidRotation += 0.05;
+		}
 		// Sprite animation
 		if ((int)spaceshipVelocity.x == 0 && (int)spaceshipVelocity.y == 0) {
 			spaceshipSprite.staticFrame();
@@ -817,12 +845,12 @@ void update(int frames) {
 			asteroidIndexToRemove.pop();
 		}
 
-		//Collision Between Bullet and Wall
 		for (int i = 0; i < bulletEntry; i++) {
 			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
 			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
 		    bulletPos = bulletTrans[i].getTrans() + bulletVelocity;
 			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
+			//Collision Between Bullet and Wall
 			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
 				bulletIndexToRemove.push(i);
 			}
@@ -832,14 +860,16 @@ void update(int frames) {
 			bulletIndexToRemove.pop();
 		}
 
-		//Collision Between Asteroid and Wall
-		for (int i = 0; i < asteroidEntry; i++) {
-			asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
-			asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
-			asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
-			asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
-			if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
-				asteroidIndexToRemove.push(i);
+		if (!timeStop) {
+			for (int i = 0; i < asteroidEntry; i++) {
+				asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
+				asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
+				asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
+				asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
+				//Collision Between Asteroid and Wall
+				if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
+					asteroidIndexToRemove.push(i);
+				}
 			}
 		}
 		while (!asteroidIndexToRemove.empty()) {
@@ -913,14 +943,6 @@ void update(int frames) {
 }
 
 void updateBullet(int frames) {
-
-	if (diKeys[DIK_X] & 0x80) {
-		toggleShoot = true;
-	}
-	if (diKeys[DIK_Z] & 0x80) {
-		toggleShoot = false;
-	}
-
 	for (int i = 0; i < frames; i++) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
@@ -937,10 +959,12 @@ void updateThrust(int frames) {
 	}
 }
 void updateAsteroid(int frames) {
-	asteroidStartPosition.x = 50 + (rand() % 1200);
-	for (int i = 0; i < frames; i++) {
-		asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
-		asteroidEntry++;
+	if (!timeStop) {
+		asteroidStartPosition.x = 50 + (rand() % 1200);
+		for (int i = 0; i < frames; i++) {
+			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
+			asteroidEntry++;
+		}
 	}
 }
 
@@ -950,6 +974,13 @@ void updateWave(int frames) {
 		if (waveSec == 60) {
 			waveSec = 0;
 			waveMin++;
+		}
+		if (timeStop) {
+			timeStopDurationLeft--;
+			if (timeStopDurationLeft <= 0) {
+				timeStop = false;
+				timeStopDurationLeft = timeStopDuration;
+			}
 		}
 	}
 }
@@ -963,7 +994,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	srand(time(0));
 	asteroidTimer->init(3);
 
-	bulletTimer->init(5);
+	bulletTimer->init(bulletInterval);
 
 	thrustTimer->init(4);
 
@@ -986,13 +1017,11 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	{
 		getInput();
 		//Physics();
-		if (!gamePaused) {
-			update(gameTimer->FramesToUpdate());
-			updateBullet(bulletTimer->FramesToUpdate());
-			updateThrust(thrustTimer->FramesToUpdate());
-			updateAsteroid(asteroidTimer->FramesToUpdate());
-			updateWave(waveTimer->FramesToUpdate());
-		}
+		update(gameTimer->FramesToUpdate());
+		updateBullet(bulletTimer->FramesToUpdate());
+		updateThrust(thrustTimer->FramesToUpdate());
+		updateAsteroid(asteroidTimer->FramesToUpdate());
+		updateWave(waveTimer->FramesToUpdate());
 		render();
 		Sound();
 
