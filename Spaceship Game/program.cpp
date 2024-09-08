@@ -789,6 +789,7 @@ void update(int frames) {
 					//ShowCursor(true);
 					//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
 					//gamePaused = true;
+					myAudioManager->PlayBoom();
 					resetStage();
 				}
 			}
