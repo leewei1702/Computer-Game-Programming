@@ -753,14 +753,6 @@ void update(int frames) {
 		//		spaceship2Position = spaceship2OldPosition;
 		//	}
 		//}
-		for (int i = 0; i < bulletEntry; i++) {
-			for (int j = 0; j < asteroidEntry; j++) {
-				if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
-					removeBulletGap(i);
-					removeAsteroidGap(j);
-				}
-			}
-		}
 		for (int i = 0; i < asteroidEntry; i++) {
 			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
 				myAudioManager->PlaySad();
@@ -769,6 +761,16 @@ void update(int frames) {
 				PostQuitMessage(0);
 			}
 		}
+
+		for (int i = 0; i < bulletEntry; i++) {
+			for (int j = 0; j < asteroidEntry; j++) {
+				if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
+					removeBulletGap(i);
+					removeAsteroidGap(j);
+				}
+			}
+		}
+
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
 	}
@@ -855,7 +857,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	gameTimer->init(50);
 
-	bulletTimer->init(3);
+	bulletTimer->init(5);
 
 	thrustTimer->init(4);
 
