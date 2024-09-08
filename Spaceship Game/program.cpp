@@ -18,6 +18,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 using namespace std;
+enum powerUp{hpPowerUp, bulletPowerUp, timePowerUp};
 
 //Window Structure
 struct {
@@ -165,6 +166,7 @@ private:
 	D3DXVECTOR2 rotationCenter;
 	float rotation;
 	D3DXVECTOR2 trans;
+	int powerUpChosen;
 
 public:
 	SpriteTransform(D3DXVECTOR2 scalingCenter, float scalingRotation, D3DXVECTOR2 scaling, D3DXVECTOR2 rotationCenter, float rotation, D3DXVECTOR2 trans) {
@@ -174,6 +176,15 @@ public:
 		this->rotationCenter = rotationCenter;
 		this->rotation = rotation;
 		this->trans = trans;
+	}
+	SpriteTransform(D3DXVECTOR2 scalingCenter, float scalingRotation, D3DXVECTOR2 scaling, D3DXVECTOR2 rotationCenter, float rotation, D3DXVECTOR2 trans, int powerUpChosen) {
+		this->scalingCenter = scalingCenter;
+		this->scalingRotation = scalingRotation;
+		this->scaling = scaling;
+		this->rotationCenter = rotationCenter;
+		this->rotation = rotation;
+		this->trans = trans;
+		this->powerUpChosen = powerUpChosen;
 	}
 	SpriteTransform() {
 
@@ -198,6 +209,9 @@ public:
 	}
 	D3DXVECTOR2& getTrans() {
 		return trans;
+	}
+	int getPowerUpChosen() {
+		return powerUpChosen;
 	}
 	void setMat(D3DXMATRIX mat) {
 		this->mat = mat;
@@ -268,6 +282,10 @@ Texture thrustTexture("Assets/thrust.png");
 Texture turretTexture("Assets/turret.png");
 Texture asteroidTexture("Assets/asteroid.png");
 Texture bulletTexture("Assets/bullet.png");
+Texture hpPowerUpTexture("Assets/powerup1.png");
+Texture bulletPowerUpTexture("Assets/powerup2.png");
+Texture timePowerUpTexture("Assets/powerup3.png");
+Texture powerUpTexture(NULL);
 
 //Spritesheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
@@ -279,6 +297,9 @@ SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
 SpriteSheet asteroidSprite(60, 60);
 SpriteSheet bulletSprite(16, 28);
+SpriteSheet hpPowerUpSprite(35, 35);
+SpriteSheet bulletPowerUpSprite(35, 35);
+SpriteSheet timePowerUpSprite(35, 35);
 
 SpriteTransform pointerTrans;
 SpriteTransform spaceshipTrans;
@@ -286,6 +307,7 @@ SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
 SpriteTransform bulletTrans[100];
 SpriteTransform asteroidTrans[100];
+SpriteTransform powerUpTrans[30];
 
 //Default value for rgb color
 int red = 0;
@@ -351,10 +373,6 @@ float static PI = 3.142;
 //Friction
 float friction = 0.01; //1 = no friction
 
-//Normalize
-D3DXVECTOR2 normalizedSpaceshipVelocity;
-D3DXVECTOR2 normalizedSpaceship2Velocity;
-
 //Spaceship position
 D3DXVECTOR2 spaceshipPosition(600, 600);
 D3DXVECTOR2 spaceshipOldPosition;
@@ -387,7 +405,8 @@ float turretCenterX;
 float turretCenterY;
 D3DXVECTOR2 bulletStartPosition;
 D3DXVECTOR2 bulletPos;
-int bulletInterval = 5;
+int defaultBulletInterval = 5;
+int bulletInterval = defaultBulletInterval;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
@@ -402,9 +421,19 @@ D3DXVECTOR2 asteroidPosition;
 boolean toggleShoot = false;
 queue<int> asteroidIndexToRemove;
 
+//Power Up
 boolean timeStop;
 int timeStopDuration = 10;
 int timeStopDurationLeft = timeStopDuration;
+boolean bulletPowerUpPicked;
+int bulletPowerUpDuration = 10;
+int bulletPowerUpDurationLeft = bulletPowerUpDuration;
+int powerUpEntry = 0;
+D3DXVECTOR2 powerUpPosition;
+int powerUpSpawnRate = 5;
+int powerUpSpawnRateLeft = powerUpSpawnRate;
+queue<int> powerUpIndexToRemove;
+int powerUpChosen;
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -456,12 +485,20 @@ void removeAsteroidGap(int removedIndex) {
 	asteroidEntry--;
 }
 
+void removePowerUpGap(int removedIndex) {
+	for (int i = removedIndex; i < powerUpEntry - 1; i++) {
+		powerUpTrans[i] = powerUpTrans[i + 1];
+	}
+	powerUpEntry--;
+}
+
 void resetStage() {
 	lives = 3;
 	waveSec = 0;
 	waveMin = 0;
 	asteroidEntry = 0;
 	bulletEntry = 0;
+	powerUpEntry = 0;
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
 	while (!bulletIndexToRemove.empty()) {
@@ -469,6 +506,9 @@ void resetStage() {
 	}
 	while (!asteroidIndexToRemove.empty()) {
 		asteroidIndexToRemove.pop();
+	}
+	while (!powerUpIndexToRemove.empty()) {
+		powerUpIndexToRemove.pop();
 	}
 }
 
@@ -578,6 +618,20 @@ void spriteRender() {
 		    sprite->SetTransform(&asteroidTrans[i].getMat());
 		    sprite->Draw(asteroidTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
+	for (int i = 0; i < powerUpEntry; i++) {
+		powerUpTrans[i].transform();
+		sprite->SetTransform(&powerUpTrans[i].getMat());
+		if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
+			powerUpTexture = hpPowerUpTexture;
+		}
+		else if (powerUpTrans[i].getPowerUpChosen() == bulletPowerUp) {
+			powerUpTexture = bulletPowerUpTexture;
+		}
+		else if (powerUpTrans[i].getPowerUpChosen() == timePowerUp) {
+			powerUpTexture = timePowerUpTexture;
+		}
+		sprite->Draw(powerUpTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	}
 	//Draw Mouse Position Font
 	textTrans.transform();
 
@@ -679,6 +733,9 @@ void createSprite() {
 	hr = turretTexture.createTextureFromFile();
 	hr = asteroidTexture.createTextureFromFile();
 	hr = bulletTexture.createTextureFromFile();
+	hr = hpPowerUpTexture.createTextureFromFile();
+	hr = bulletPowerUpTexture.createTextureFromFile();
+	hr = timePowerUpTexture.createTextureFromFile();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -706,6 +763,18 @@ void cleanupSprite() {
 
 	bulletTexture.releaseTexture();
 	bulletTexture.setTexture(NULL);
+
+	hpPowerUpTexture.releaseTexture();
+	hpPowerUpTexture.setTexture(NULL);
+
+	bulletPowerUpTexture.releaseTexture();
+	bulletPowerUpTexture.setTexture(NULL);
+
+	timePowerUpTexture.releaseTexture();
+	timePowerUpTexture.setTexture(NULL);
+
+	powerUpTexture.releaseTexture();
+	powerUpTexture.setTexture(NULL);
 	
 	font->Release();
 	font = NULL;
@@ -876,6 +945,34 @@ void update(int frames) {
 			removeAsteroidGap(asteroidIndexToRemove.front());
 			asteroidIndexToRemove.pop();
 		}
+		// Power Up Trans
+		for (int i = 0; i < powerUpEntry; i++) {
+			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
+				powerUpIndexToRemove.push(i);
+				if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
+					if (lives < 3) {
+						myAudioManager->PlayPickUp();
+						lives++;
+					}
+				}
+				if (powerUpTrans[i].getPowerUpChosen() == bulletPowerUp) {
+					myAudioManager->PlayPickUp();
+					bulletTimer->init(15);
+					bulletPowerUpPicked = true;
+					bulletPowerUpDurationLeft = bulletPowerUpDuration;
+				}
+				if (powerUpTrans[i].getPowerUpChosen() == timePowerUp) {
+					myAudioManager->PlayTheWorld();
+					timeStop = true;
+					timeStopDurationLeft = timeStopDuration;
+				}
+			}
+		}
+		while (!powerUpIndexToRemove.empty()) {
+			removePowerUpGap(powerUpIndexToRemove.front());
+			powerUpIndexToRemove.pop();
+		}
+
 
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
@@ -969,8 +1066,12 @@ void updateAsteroid(int frames) {
 }
 
 void updateWave(int frames) {
+	powerUpPosition.x = 50 + (rand() % 1200);
+	powerUpPosition.y = 600;
+	powerUpChosen = (rand() % 3);
 	for (int i = 0; i < frames; i++) {
 		waveSec++;
+		powerUpSpawnRateLeft--;
 		if (waveSec == 60) {
 			waveSec = 0;
 			waveMin++;
@@ -980,6 +1081,22 @@ void updateWave(int frames) {
 			if (timeStopDurationLeft <= 0) {
 				timeStop = false;
 				timeStopDurationLeft = timeStopDuration;
+			}
+		}
+		if (bulletPowerUpPicked) {
+			bulletPowerUpDurationLeft--;
+			if (bulletPowerUpDurationLeft <= 0) {
+				bulletPowerUpPicked = false;
+				bulletPowerUpDurationLeft = bulletPowerUpDuration;
+				bulletTimer->init(defaultBulletInterval);
+			}
+		}
+		if (powerUpSpawnRateLeft <= 0) {
+			powerUpSpawnRateLeft = powerUpSpawnRate;
+			powerUpTrans[powerUpEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, powerUpPosition, powerUpChosen);
+			powerUpEntry++;
+			if (powerUpEntry > 3) {
+				removePowerUpGap(0);
 			}
 		}
 	}
@@ -992,7 +1109,7 @@ void Sound() {
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
-	asteroidTimer->init(3);
+	asteroidTimer->init(10);
 
 	bulletTimer->init(bulletInterval);
 
