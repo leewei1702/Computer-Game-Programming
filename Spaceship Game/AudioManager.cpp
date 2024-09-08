@@ -43,7 +43,7 @@ void AudioManager::LoadSounds()
 	result = sound2->setMode(FMOD_LOOP_OFF);
 
 	result = system->createStream("Assets/Sound/sad.mp3", FMOD_DEFAULT, 0, &sound3);
-	result = sound3->setMode(FMOD_LOOP_NORMAL);
+	result = sound3->setMode(FMOD_LOOP_OFF);
 }
 
 void AudioManager::UpdateSound()
