@@ -1044,6 +1044,9 @@ void update(int frames) {
 }
 
 void updateBullet(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
 	for (int i = 0; i < frames; i++) {
 		//Left click
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
@@ -1055,11 +1058,17 @@ void updateBullet(int frames) {
 	
 }
 void updateThrust(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
 	for (int i = 0; i < frames; i++) {
 		thrustSprite.nextThrustFrame();
 	}
 }
 void updateAsteroid(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
 	if (!timeStop) {
 		asteroidStartPosition.x = 50+ (rand() % 1100);
 		for (int i = 0; i < frames; i++) {
@@ -1070,6 +1079,9 @@ void updateAsteroid(int frames) {
 }
 
 void updateWave(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
 	powerUpPosition.x = 50 + (rand() % 1200);
 	powerUpPosition.y = 600;
 	powerUpChosen = (rand() % 3);
