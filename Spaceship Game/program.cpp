@@ -509,8 +509,8 @@ void resetStage() {
 	scores = 0;
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
-	timeStopDurationLeft = timeStopDuration;
-	bulletPowerUpDurationLeft = bulletPowerUpDuration;
+	timeStopDurationLeft = 0;
+	bulletPowerUpDurationLeft = 0;
 	while (!bulletIndexToRemove.empty()) {
 		bulletIndexToRemove.pop();
 	}
