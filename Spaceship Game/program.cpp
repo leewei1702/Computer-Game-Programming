@@ -1061,7 +1061,7 @@ void updateThrust(int frames) {
 }
 void updateAsteroid(int frames) {
 	if (!timeStop) {
-		asteroidStartPosition.x = 50 + (rand() % 1100);
+		asteroidStartPosition.x = 50+ (rand() % 1100);
 		for (int i = 0; i < frames; i++) {
 			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
 			asteroidEntry++;
@@ -1115,7 +1115,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	srand(time(0));
 
 	gameTimer->init(50);
-
+	//better dont use frametimer, when start program, 3 frame update instantly
 	asteroidTimer->init(10);
 
 	bulletTimer->init(bulletInterval);
