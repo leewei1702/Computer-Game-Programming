@@ -357,6 +357,17 @@ string strLivesPrefix = "Lives: ";
 string strLivesPostfix;
 char livesText[15];
 
+//Scores
+int scores = 0;
+int highScores = 0;
+//Variable to show score text
+string strScoresPrefix = "Scores: ";
+string strScoresPostfix;
+char scoresText[15];
+string strHighScoresPrefix = "High Scores: ";
+string strHighScoresPostfix;
+char highScoresText[15];
+
 //	Key input buffer
 BYTE  diKeys[256];
 
@@ -495,6 +506,7 @@ void resetStage() {
 	asteroidEntry = 0;
 	bulletEntry = 0;
 	powerUpEntry = 0;
+	scores = 0;
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
 	timeStopDurationLeft = timeStopDuration;
@@ -576,6 +588,8 @@ void spriteRender() {
 	SpriteTransform timerTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
 	SpriteTransform livesTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
 	SpriteTransform helpTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 35));
+	SpriteTransform scoresTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 70));
+	SpriteTransform highScoresTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 105));
 
 	//Text
 	textRect.left = 0;
@@ -689,6 +703,38 @@ void spriteRender() {
 	sprite->SetTransform(&helpTextTrans.getMat());
 	font->DrawText(sprite, "Press X to toggle the shooting", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
+	//Draw Scores Font
+	scoresTextTrans.transform();
+
+	sprite->SetTransform(&scoresTextTrans.getMat());
+	strScoresPostfix = to_string(scores);
+	for (int i = 0; i < strScoresPrefix.length(); i++) {
+		scoresText[i] = strScoresPrefix[i];
+	}
+	for (int i = 0; i < strScoresPostfix.length(); i++) {
+		scoresText[i + strScoresPrefix.length()] = strScoresPostfix[i];
+	}
+	font->DrawText(sprite, scoresText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	
+	for (int i = 0; i < sizeof(scoresText); i++) {
+		scoresText[i] = ' ';
+	}
+	//Draw High Scores Font
+	highScoresTextTrans.transform();
+
+	sprite->SetTransform(&highScoresTextTrans.getMat());
+	strHighScoresPostfix = to_string(highScores);
+	for (int i = 0; i < strHighScoresPrefix.length(); i++) {
+		highScoresText[i] = strHighScoresPrefix[i];
+	}
+	for (int i = 0; i < strHighScoresPostfix.length(); i++) {
+		highScoresText[i + strHighScoresPrefix.length()] = strHighScoresPostfix[i];
+	}
+	font->DrawText(sprite, highScoresText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	for (int i = 0; i < sizeof(highScoresText); i++) {
+		highScoresText[i] = ' ';
+	}
 	sprite->End();
 }
 
@@ -835,7 +881,6 @@ void physics() {
 
 		if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
 			asteroidIndexToRemove.push(i);
-			cout << "hi" << endl;
 		}
 	}
 	while (!asteroidIndexToRemove.empty()) {
@@ -847,7 +892,6 @@ void physics() {
 	for (int i = 0; i < asteroidEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
 			asteroidIndexToRemove.push(i);
-			cout << "hitted" << endl;
 			if (lives > 0) {
 				myAudioManager->PlayHit();
 				lives--;
@@ -857,6 +901,9 @@ void physics() {
 				//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
 				//gamePaused = true;
 				myAudioManager->PlayBoom();
+				if (scores > highScores) {
+					highScores = scores;
+				}
 				resetStage();
 			}
 		}
@@ -871,6 +918,7 @@ void physics() {
 			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
 				bulletIndexToRemove.push(i);
 				asteroidIndexToRemove.push(j);
+				scores++;
 			}
 		}
 	}
