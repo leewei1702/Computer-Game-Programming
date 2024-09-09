@@ -13,7 +13,7 @@ public:
 	void InitializeAudio(); //initializing FMOD sound card
 	void PlaySound1();
 	//play sound 1
-	void PlaySoundTrack(); //play sound 2
+	void PlayShoot(int screenWidth, int spaceshipPositionX); //play sound 2
 	void PlaySad();
 	void PlayHit();
 	void PlayBoom();
