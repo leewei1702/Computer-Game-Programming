@@ -287,7 +287,7 @@ Texture bulletPowerUpTexture("Assets/powerup2.png");
 Texture timePowerUpTexture("Assets/powerup3.png");
 Texture powerUpTexture(NULL);
 
-//Spritesheet
+//Sprite Sheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
@@ -301,6 +301,7 @@ SpriteSheet hpPowerUpSprite(35, 35);
 SpriteSheet bulletPowerUpSprite(35, 35);
 SpriteSheet timePowerUpSprite(35, 35);
 
+//Sprite Transformation
 SpriteTransform pointerTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
@@ -319,6 +320,7 @@ LPD3DXSPRITE sprite = NULL;
 
 //pointer to font interface
 LPD3DXFONT font = NULL;
+//Rect for text
 RECT textRect;
 RECT timerTextRect;
 
@@ -385,24 +387,16 @@ D3DXVECTOR2 spaceshipEngineForce;
 float spaceshipEnginePower = 30;
 float spaceshipMass = 100;
 
-//Spaceship2 position
-D3DXVECTOR2 spaceship2Position(800, 300);
-D3DXVECTOR2 spaceship2OldPosition;
-//Spaceship2 rotation
-float spaceship2Rotation = 4.71239;
-//Spaceship2 Physics
-D3DXVECTOR2 spaceship2Velocity;
-D3DXVECTOR2 spaceship2Acceleration;
-D3DXVECTOR2 spaceship2EngineForce;
-float spaceship2EnginePower = 40;
-float spaceship2Mass = 500;
-
+// Turret
 D3DXVECTOR2 turretPosition;
 float turretRotation;
 float pointerCenterX;
 float pointerCenterY;
 float turretCenterX;
 float turretCenterY;
+
+// Bullet
+boolean toggleShoot = false;
 D3DXVECTOR2 bulletStartPosition;
 D3DXVECTOR2 bulletPos;
 int defaultBulletInterval = 5;
@@ -412,13 +406,13 @@ D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
 queue<int> bulletIndexToRemove;
 
+// Asteroid
 int asteroidEntry = 0;
 D3DXVECTOR2 asteroidVelocity;
 float asteroidPower = 10;
 float asteroidRotation;
 D3DXVECTOR2 asteroidStartPosition(500,-100);
 D3DXVECTOR2 asteroidPosition;
-boolean toggleShoot = false;
 queue<int> asteroidIndexToRemove;
 
 //Power Up
@@ -428,6 +422,7 @@ int timeStopDurationLeft = timeStopDuration;
 boolean bulletPowerUpPicked;
 int bulletPowerUpDuration = 10;
 int bulletPowerUpDurationLeft = bulletPowerUpDuration;
+int bulletPowerUpSpeed = 15;
 int powerUpEntry = 0;
 D3DXVECTOR2 powerUpPosition;
 int powerUpSpawnRate = 5;
@@ -455,6 +450,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			break;
 		case 0x56:  //V key
 			if (!timeStop) {
+				timeStopDurationLeft = 10000;
 				timeStop = true;
 			}
 			else {
@@ -501,6 +497,8 @@ void resetStage() {
 	powerUpEntry = 0;
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
+	timeStopDurationLeft = timeStopDuration;
+	bulletPowerUpDurationLeft = bulletPowerUpDuration;
 	while (!bulletIndexToRemove.empty()) {
 		bulletIndexToRemove.pop();
 	}
@@ -821,13 +819,120 @@ void cleanupInput() {
 	dInput = NULL;
 }
 
+void physics() {
+	// Collision Between Bullet and Wall
+	for (int i = 0; i < bulletEntry; i++) {
+		if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
+			bulletIndexToRemove.push(i);
+		}
+	}
+	while (!bulletIndexToRemove.empty()) {
+		removeBulletGap(bulletIndexToRemove.front());
+		bulletIndexToRemove.pop();
+	}
+	// Collision Between Asteroid and Wall
+	for (int i = 0; i < asteroidEntry; i++) {
+
+		if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
+			asteroidIndexToRemove.push(i);
+			cout << "hi" << endl;
+		}
+	}
+	while (!asteroidIndexToRemove.empty()) {
+		removeAsteroidGap(asteroidIndexToRemove.front());
+		asteroidIndexToRemove.pop();
+	}
+
+	// Collision Between Asteroid and Spaceship
+	for (int i = 0; i < asteroidEntry; i++) {
+		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
+			asteroidIndexToRemove.push(i);
+			cout << "hitted" << endl;
+			if (lives > 0) {
+				myAudioManager->PlayHit();
+				lives--;
+			}
+			if (lives <= 0) {
+				//ShowCursor(true);
+				//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
+				//gamePaused = true;
+				myAudioManager->PlayBoom();
+				resetStage();
+			}
+		}
+	}
+	while (!asteroidIndexToRemove.empty()) {
+		removeAsteroidGap(asteroidIndexToRemove.front());
+		asteroidIndexToRemove.pop();
+	}
+	// Collision Between Bullet and Asteroid
+	for (int i = 0; i < bulletEntry; i++) {
+		for (int j = 0; j < asteroidEntry; j++) {
+			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
+				bulletIndexToRemove.push(i);
+				asteroidIndexToRemove.push(j);
+			}
+		}
+	}
+	while (!bulletIndexToRemove.empty()) {
+		removeBulletGap(bulletIndexToRemove.front());
+		bulletIndexToRemove.pop();
+	}
+	while (!asteroidIndexToRemove.empty()) {
+		removeAsteroidGap(asteroidIndexToRemove.front());
+		asteroidIndexToRemove.pop();
+	}
+	// Collision Between Spaceship and Powerup
+	for (int i = 0; i < powerUpEntry; i++) {
+		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
+			powerUpIndexToRemove.push(i);
+			if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
+				if (lives < 3) {
+					myAudioManager->PlayPickUp();
+					lives++;
+				}
+			}
+			if (powerUpTrans[i].getPowerUpChosen() == bulletPowerUp) {
+				myAudioManager->PlayPickUp();
+				bulletTimer->init(bulletPowerUpSpeed);
+				bulletPowerUpPicked = true;
+				bulletPowerUpDurationLeft = bulletPowerUpDuration;
+			}
+			if (powerUpTrans[i].getPowerUpChosen() == timePowerUp) {
+				myAudioManager->PlayTheWorld();
+				timeStop = true;
+				timeStopDurationLeft = timeStopDuration;
+			}
+		}
+	}
+	while (!powerUpIndexToRemove.empty()) {
+		removePowerUpGap(powerUpIndexToRemove.front());
+		powerUpIndexToRemove.pop();
+	}
+}
+
 void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
+		// Bullet Movement
+		for (int i = 0; i < bulletEntry; i++) {
+			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
+			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
+			bulletPos = bulletTrans[i].getTrans() + bulletVelocity;
+			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
+		}
+
+		// Asteroid Movement
 		if (!timeStop) {
 			asteroidRotation += 0.05;
+			for (int i = 0; i < asteroidEntry; i++) {
+				asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
+				asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
+				asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
+				asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
+			}
 		}
-		// Sprite animation
+		// Spaceship Movement
 		if ((int)spaceshipVelocity.x == 0 && (int)spaceshipVelocity.y == 0) {
 			spaceshipSprite.staticFrame();
 		}
@@ -874,105 +979,6 @@ void update(int frames) {
 		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
 
-		//Collision Between Asteroid and Spaceship
-		for (int i = 0; i < asteroidEntry; i++) {
-			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
-				asteroidIndexToRemove.push(i);
-				if (lives > 0) {
-					myAudioManager->PlayHit();
-					lives--;
-				}
-				if (lives <= 0) {
-					//ShowCursor(true);
-					//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
-					//gamePaused = true;
-					myAudioManager->PlayBoom();
-					resetStage();
-				}
-			}
-		}
-		while (!asteroidIndexToRemove.empty()) {
-			removeAsteroidGap(asteroidIndexToRemove.front());
-			asteroidIndexToRemove.pop();
-		}
-
-		//Collision Between Bullet and Asteroid
-		for (int i = 0; i < bulletEntry; i++) {
-			for (int j = 0; j < asteroidEntry; j++) {
-				if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
-					bulletIndexToRemove.push(i);
-					asteroidIndexToRemove.push(j);
-				}
-			}
-		}
-		while (!bulletIndexToRemove.empty()) {
-			removeBulletGap(bulletIndexToRemove.front());
-			bulletIndexToRemove.pop();
-		}
-		while (!asteroidIndexToRemove.empty()) {
-			removeAsteroidGap(asteroidIndexToRemove.front());
-			asteroidIndexToRemove.pop();
-		}
-
-		for (int i = 0; i < bulletEntry; i++) {
-			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
-			bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
-		    bulletPos = bulletTrans[i].getTrans() + bulletVelocity;
-			bulletTrans[i] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), bulletTrans[i].getRotation(), bulletPos);
-			//Collision Between Bullet and Wall
-			if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
-				bulletIndexToRemove.push(i);
-			}
-		}
-		while (!bulletIndexToRemove.empty()) {
-			removeBulletGap(bulletIndexToRemove.front());
-			bulletIndexToRemove.pop();
-		}
-
-		if (!timeStop) {
-			for (int i = 0; i < asteroidEntry; i++) {
-				asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
-				asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
-				asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
-				asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
-				//Collision Between Asteroid and Wall
-				if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
-					asteroidIndexToRemove.push(i);
-				}
-			}
-		}
-		while (!asteroidIndexToRemove.empty()) {
-			removeAsteroidGap(asteroidIndexToRemove.front());
-			asteroidIndexToRemove.pop();
-		}
-		// Power Up Trans
-		for (int i = 0; i < powerUpEntry; i++) {
-			if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
-				powerUpIndexToRemove.push(i);
-				if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
-					if (lives < 3) {
-						myAudioManager->PlayPickUp();
-						lives++;
-					}
-				}
-				if (powerUpTrans[i].getPowerUpChosen() == bulletPowerUp) {
-					myAudioManager->PlayPickUp();
-					bulletTimer->init(15);
-					bulletPowerUpPicked = true;
-					bulletPowerUpDurationLeft = bulletPowerUpDuration;
-				}
-				if (powerUpTrans[i].getPowerUpChosen() == timePowerUp) {
-					myAudioManager->PlayTheWorld();
-					timeStop = true;
-					timeStopDurationLeft = timeStopDuration;
-				}
-			}
-		}
-		while (!powerUpIndexToRemove.empty()) {
-			removePowerUpGap(powerUpIndexToRemove.front());
-			powerUpIndexToRemove.pop();
-		}
-
 
 		//Spaceship right checking
 		if (spaceshipPosition.x > screenWidth - spaceshipSprite.getSpriteWidth()) {
@@ -1010,8 +1016,6 @@ void update(int frames) {
 	else {
 		turretRotation = asin((pointerCenterX - turretCenterX) / sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
 	}
-
-
 
 	//Left click
 	if (mouseState.rgbButtons[0] & 0x80) {
@@ -1057,7 +1061,7 @@ void updateThrust(int frames) {
 }
 void updateAsteroid(int frames) {
 	if (!timeStop) {
-		asteroidStartPosition.x = 50 + (rand() % 1200);
+		asteroidStartPosition.x = 50 + (rand() % 1100);
 		for (int i = 0; i < frames; i++) {
 			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
 			asteroidEntry++;
@@ -1109,6 +1113,9 @@ void Sound() {
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
+
+	gameTimer->init(50);
+
 	asteroidTimer->init(10);
 
 	bulletTimer->init(bulletInterval);
@@ -1117,8 +1124,6 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	waveTimer->init(1);
 
-	gameTimer->init(50);
-
 	createWindow();
 
 	createDirectX();
@@ -1126,6 +1131,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	createSprite();
 
 	createDirectInput();
+
 	myAudioManager->InitializeAudio();
 	myAudioManager->LoadSounds();
 	myAudioManager->PlaySound1();
@@ -1133,15 +1139,14 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	while (windowIsRunning())
 	{
 		getInput();
-		//Physics();
-		update(gameTimer->FramesToUpdate());
+		physics();
 		updateBullet(bulletTimer->FramesToUpdate());
 		updateThrust(thrustTimer->FramesToUpdate());
 		updateAsteroid(asteroidTimer->FramesToUpdate());
 		updateWave(waveTimer->FramesToUpdate());
-		render();
+		update(gameTimer->FramesToUpdate());
 		Sound();
-
+		render();
 	}
 
 	cleanupSprite();
