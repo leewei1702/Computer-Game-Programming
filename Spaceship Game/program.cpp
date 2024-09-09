@@ -935,8 +935,8 @@ void physics() {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
 			powerUpIndexToRemove.push(i);
 			if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
+				myAudioManager->PlayPickUp();
 				if (lives < 3) {
-					myAudioManager->PlayPickUp();
 					lives++;
 				}
 			}
