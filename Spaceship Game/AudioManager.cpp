@@ -1,5 +1,4 @@
 #include "AudioManager.h"
-
 void AudioManager::InitializeAudio()
 {
 	result = FMOD::System_Create(&system);
@@ -9,23 +8,26 @@ void AudioManager::InitializeAudio()
 void AudioManager::PlaySound1()
 {
 	result = system->playSound(sound1, 0, false, &channel);
-	channel->setVolume(1);
-	//channel->setPan(0);
-	//channel->setPaused(false);
 }
 
-void AudioManager::PlaySoundTrack()
+void AudioManager::PlayShoot(int screenWidth, int spaceshipPositionX)
 {
 	result = system->playSound(sound2, 0, false, &channel2);
 	//channel->setVolume(1);
-	//channel->setPan(0);
+	if (spaceshipPositionX < screenWidth/4) {
+		channel2->setPan(-1);
+	} 
+	else if (spaceshipPositionX > screenWidth*3/4) {
+		channel2->setPan(1);
+	}
+	else {
+		channel2->setPan(0);
+	}
 	//channel->setPaused(false);
 }
 
 void AudioManager::PlaySad()
 {
-	channel->setPaused(true);
-	channel2->setPaused(true);
 	result = system->playSound(sound3, 0, false, &channel3);
 	//channel->setVolume(1);
 	//channel->setPan(0);
