@@ -576,8 +576,6 @@ void createDirectX() {
 
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
-	turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
-	bulletStartPosition = D3DXVECTOR2(spaceshipPosition.x + spaceshipSprite.getSpriteWidth() / 2 - 5, spaceshipPosition.y + spaceshipSprite.getSpriteHeight() / 2 - 5);
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
     pointerTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
 	spaceshipTrans = SpriteTransform(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
@@ -962,6 +960,7 @@ void physics() {
 void update(int frames) {
 	for (int i = 0; i < frames; i++)
 	{
+		turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
 		// Bullet Movement
 		for (int i = 0; i < bulletEntry; i++) {
 			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
@@ -1092,6 +1091,7 @@ void update(int frames) {
 }
 
 void updateBullet(int frames) {
+	bulletStartPosition = D3DXVECTOR2(spaceshipPosition.x + spaceshipSprite.getSpriteWidth() / 2 - 5, spaceshipPosition.y + spaceshipSprite.getSpriteHeight() / 2 - 5);
 	if (frames > 1) {
 		frames = 1;
 	}
@@ -1100,7 +1100,7 @@ void updateBullet(int frames) {
 		if (mouseState.rgbButtons[0] & 0x80 || toggleShoot == true) {
 			bulletTrans[bulletEntry] = SpriteTransform(D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(bulletSprite.getTotalSpriteWidth() / 2, bulletSprite.getTotalSpriteHeight() / 2), turretRotation, bulletStartPosition);
 			bulletEntry++;
-			myAudioManager->PlaySoundTrack();
+			myAudioManager->PlayShoot(screenWidth, spaceshipPosition.x);
 		}
 	}
 	
