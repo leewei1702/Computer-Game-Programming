@@ -464,9 +464,6 @@ LRESULT CALLBACK SplashWindowProcedure(HWND hWnd2, UINT message, WPARAM wParam, 
 {
 	switch (message)
 	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
 	default:
 		return DefWindowProc(hWnd2, message, wParam, lParam);
 	}
@@ -588,7 +585,7 @@ void createWindow() {
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 	//CreateWindow(TEXT("button"), TEXT("NameButton"), WS_VISIBLE | WS_CHILD, 300, 300, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
 	
-	ShowCursor(false);
+	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd, 1);
 }
 
@@ -1294,7 +1291,6 @@ void updateSplash (int frames) {
 	for (int i = 0; i < frames; i++) {
 		splashCount++;
 	}
-
 }
 
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
@@ -1321,13 +1317,10 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	while (splashCount < maxSplashCount && windowIsRunning()) {
 		splashRender();
-		if (splashCount == maxSplashCount) {
-			DestroyWindow(wndStruct.g_hWnd2);
-			break;
-		}
 		updateSplash(splashTimer->FramesToUpdate());
 	}
 
+	DestroyWindow(wndStruct.g_hWnd2);
 	cleanupSplashSprite();
 	cleanupSplashDirectX();
 	cleanupSplashWindow();
