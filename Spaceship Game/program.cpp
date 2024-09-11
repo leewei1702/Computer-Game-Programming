@@ -23,7 +23,9 @@ enum powerUp{hpPowerUp, bulletPowerUp, timePowerUp};
 //Window Structure
 struct {
 	WNDCLASS wndClass;
+	WNDCLASS splashWndClass;
 	HWND g_hWnd = NULL;
+	HWND g_hWnd2 = NULL;
 	MSG msg;
 } wndStruct;
 
@@ -377,6 +379,7 @@ FrameTimer* bulletTimer = new FrameTimer();
 FrameTimer* thrustTimer = new FrameTimer();
 FrameTimer* asteroidTimer = new FrameTimer();
 FrameTimer* waveTimer = new FrameTimer();
+FrameTimer* splashTimer = new FrameTimer();
 // Audio Object
 AudioManager* myAudioManager = new AudioManager();
 
@@ -440,6 +443,26 @@ int powerUpSpawnRate = 5;
 int powerUpSpawnRateLeft = powerUpSpawnRate;
 queue<int> powerUpIndexToRemove;
 int powerUpChosen;
+
+//Splash Screen
+int splashCount;
+int maxSplashCount = 5;
+
+LRESULT CALLBACK SplashWindowProcedure(HWND hWnd2, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_CLOSE:
+		DestroyWindow(wndStruct.g_hWnd2);
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		break;
+	default:
+		return DefWindowProc(hWnd2, message, wParam, lParam);
+	}
+	return 0;
+}
 
 LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -522,6 +545,24 @@ void resetStage() {
 	}
 }
 
+void createSplashWindow() {
+	ZeroMemory(&wndStruct.splashWndClass, sizeof(wndStruct.splashWndClass));
+
+	wndStruct.splashWndClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+	wndStruct.splashWndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wndStruct.splashWndClass.hInstance = GetModuleHandle(NULL);
+	wndStruct.splashWndClass.lpfnWndProc = SplashWindowProcedure;
+	wndStruct.splashWndClass.lpszClassName = "Splash Window";
+	wndStruct.splashWndClass.style = CS_HREDRAW | CS_VREDRAW;
+
+	RegisterClass(&wndStruct.splashWndClass);
+
+	wndStruct.g_hWnd2 = CreateWindowEx(0, wndStruct.splashWndClass.lpszClassName, "SplashScreen", WS_DISABLED | WS_POPUP, 500, 300, 500, 500, NULL, NULL, GetModuleHandle(NULL), NULL);
+
+	ShowCursor(true);
+	ShowWindow(wndStruct.g_hWnd2, 1);
+}
+
 void createWindow() {
 
 	ZeroMemory(&wndStruct.wndClass, sizeof(wndStruct.wndClass));
@@ -536,12 +577,13 @@ void createWindow() {
 	RegisterClass(&wndStruct.wndClass);
 
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
+	//CreateWindow(TEXT("button"), TEXT("NameButton"), WS_VISIBLE | WS_CHILD, 300, 300, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
+	
 	ShowCursor(false);
 	ShowWindow(wndStruct.g_hWnd, 1);
 }
 
 bool windowIsRunning() {
-
 	if (PeekMessage(&wndStruct.msg, NULL, 0, 0, PM_REMOVE))
 	{
 		if (wndStruct.msg.message == WM_QUIT)
@@ -554,6 +596,7 @@ bool windowIsRunning() {
 
 void cleanupWindow() {
 	UnregisterClass(wndStruct.wndClass.lpszClassName, GetModuleHandle(NULL));
+	UnregisterClass(wndStruct.splashWndClass.lpszClassName, GetModuleHandle(NULL));
 }
 
 void createDirectX() {
@@ -1170,12 +1213,22 @@ void Sound() {
 	myAudioManager->UpdateSound();
 }
 
+void updateSplash (int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
+	for (int i = 0; i < frames; i++) {
+		splashCount++;
+	}
+
+}
+
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
 
 	gameTimer->init(50);
-	//better dont use frametimer, when start program, 3 frame update instantly
+
 	asteroidTimer->init(10);
 
 	bulletTimer->init(bulletInterval);
@@ -1183,6 +1236,17 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	thrustTimer->init(4);
 
 	waveTimer->init(1);
+
+	splashTimer->init(1);
+
+	createSplashWindow();
+
+	while (splashCount <= maxSplashCount && windowIsRunning()) {
+		updateSplash(splashTimer->FramesToUpdate());
+		if (splashCount == maxSplashCount) {
+			DestroyWindow(wndStruct.g_hWnd2);
+		}
+	}
 
 	createWindow();
 
