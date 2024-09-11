@@ -1108,6 +1108,9 @@ void physics() {
 }
 
 void update(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
 	for (int i = 0; i < frames; i++)
 	{
 		turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
