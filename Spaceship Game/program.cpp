@@ -19,6 +19,7 @@
 
 using namespace std;
 enum powerUp{hpPowerUp, bulletPowerUp, timePowerUp};
+enum UIController{MainMenu, GameMenu, GameOverMenu};
 
 //Window Structure
 struct {
@@ -460,10 +461,47 @@ int splashScreenHeight = 500;
 int splashCount;
 int maxSplashCount = 5;
 
+//UI Controller
+int currentMenu = MainMenu;
+
+//Game Main Menu
+HWND startButton;
+//Game Over
+HWND gameOverContinueButton;
+HWND gameOverExitButton;
+
+void render();
+void createDirectInput();
+void resetStage() {
+	cout << "Stage Resetted Successfully" << endl;
+	lives = 3;
+	waveSec = 0;
+	waveMin = 0;
+	asteroidEntry = 0;
+	bulletEntry = 0;
+	powerUpEntry = 0;
+	scores = 0;
+	spaceshipPosition = D3DXVECTOR2(600, 600);
+	spaceshipVelocity = D3DXVECTOR2(0, 0);
+	timeStopDurationLeft = 0;
+	bulletPowerUpDurationLeft = 0;
+	powerUpSpawnRateLeft = powerUpSpawnRate;
+	while (!bulletIndexToRemove.empty()) {
+		bulletIndexToRemove.pop();
+	}
+	while (!asteroidIndexToRemove.empty()) {
+		asteroidIndexToRemove.pop();
+	}
+	while (!powerUpIndexToRemove.empty()) {
+		powerUpIndexToRemove.pop();
+	}
+}
+
 LRESULT CALLBACK SplashWindowProcedure(HWND hWnd2, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+
 	default:
 		return DefWindowProc(hWnd2, message, wParam, lParam);
 	}
@@ -474,6 +512,29 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 {
 	switch (message)
 	{
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		//Main menu start button
+		case 1:
+			DestroyWindow(startButton);
+			currentMenu = GameMenu;
+			ShowCursor(false);
+			break;
+	    //Game over continue button
+		case 2:
+			createDirectInput();
+			DestroyWindow(gameOverContinueButton);
+			DestroyWindow(gameOverExitButton);
+			resetStage();
+			currentMenu = GameMenu;
+			ShowCursor(false);
+			break;
+		case 3:
+			PostQuitMessage(0);
+			break;
+		}
+		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -528,29 +589,6 @@ void removePowerUpGap(int removedIndex) {
 	powerUpEntry--;
 }
 
-void resetStage() {
-	lives = 3;
-	waveSec = 0;
-	waveMin = 0;
-	asteroidEntry = 0;
-	bulletEntry = 0;
-	powerUpEntry = 0;
-	scores = 0;
-	spaceshipPosition = D3DXVECTOR2(600, 600);
-	spaceshipVelocity = D3DXVECTOR2(0, 0);
-	timeStopDurationLeft = 0;
-	bulletPowerUpDurationLeft = 0;
-	while (!bulletIndexToRemove.empty()) {
-		bulletIndexToRemove.pop();
-	}
-	while (!asteroidIndexToRemove.empty()) {
-		asteroidIndexToRemove.pop();
-	}
-	while (!powerUpIndexToRemove.empty()) {
-		powerUpIndexToRemove.pop();
-	}
-}
-
 void createSplashWindow() {
 	ZeroMemory(&wndStruct.splashWndClass, sizeof(wndStruct.splashWndClass));
 
@@ -583,7 +621,6 @@ void createWindow() {
 	RegisterClass(&wndStruct.wndClass);
 
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
-	//CreateWindow(TEXT("button"), TEXT("NameButton"), WS_VISIBLE | WS_CHILD, 300, 300, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
 	
 	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd, 1);
@@ -668,7 +705,7 @@ void spriteRender() {
 	//Timer Text
 	timerTextRect.left = 0;
 	timerTextRect.top = 0;
-	timerTextRect.right = 500;
+	timerTextRect.right = 100;
 	timerTextRect.bottom = 125;
 
 	//Draw Sprite
@@ -1009,14 +1046,13 @@ void physics() {
 				lives--;
 			}
 			if (lives <= 0) {
-				//ShowCursor(true);
+				ShowCursor(true);
 				//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
-				//gamePaused = true;
+				currentMenu = GameOverMenu;
 				myAudioManager->PlayBoom();
 				if (scores > highScores) {
 					highScores = scores;
 				}
-				resetStage();
 			}
 		}
 	}
@@ -1339,15 +1375,32 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	while (windowIsRunning())
 	{
-		getInput();
-		physics();
-		updateBullet(bulletTimer->FramesToUpdate());
-		updateThrust(thrustTimer->FramesToUpdate());
-		updateAsteroid(asteroidTimer->FramesToUpdate());
-		updateWave(waveTimer->FramesToUpdate());
-		update(gameTimer->FramesToUpdate());
-		Sound();
-		render();
+
+		if (currentMenu == MainMenu) {
+			CreateWindow("STATIC", "Welcome to Project Spaceship", WS_VISIBLE | WS_CHILD, screenWidth / 2, screenHeight / 2-100, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
+			startButton = CreateWindow("BUTTON", "Start Game", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 2, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
+			currentMenu = 4;
+		}
+		if (currentMenu == GameOverMenu) {
+			gameOverContinueButton = CreateWindow("BUTTON", "Click to continue playing", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 3, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)2, NULL, NULL);
+			gameOverExitButton = CreateWindow("BUTTON", "Exit game?", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 2, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)3, NULL, NULL);
+			cleanupInput();
+			createDirectInput();
+			dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+			getInput();
+			currentMenu = 4;
+		}
+		if (currentMenu == GameMenu) {
+			getInput();
+			physics();
+			updateBullet(bulletTimer->FramesToUpdate());
+			updateThrust(thrustTimer->FramesToUpdate());
+			updateAsteroid(asteroidTimer->FramesToUpdate());
+			updateWave(waveTimer->FramesToUpdate());
+			update(gameTimer->FramesToUpdate());
+			Sound();
+			render();
+		}
 	}
 
 	cleanupSprite();
