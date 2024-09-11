@@ -34,6 +34,10 @@ struct {
 	D3DPRESENT_PARAMETERS d3dPP;
 	IDirect3D9* direct3D9 = Direct3DCreate9(D3D_SDK_VERSION);
 	IDirect3DDevice9* d3dDevice;
+
+	D3DPRESENT_PARAMETERS splashD3dPP;
+	IDirect3D9* splashDirect3D9 = Direct3DCreate9(D3D_SDK_VERSION);
+	IDirect3DDevice9* splashD3dDevice;
 } directStruct;
 
 //SpriteSheet Class
@@ -260,12 +264,17 @@ public:
 	HRESULT createTextureFromFile() {
 		return D3DXCreateTextureFromFile(directStruct.d3dDevice, fileLocation, &texture);
 	}
+	HRESULT createSplashTextureFromFile() {
+		return D3DXCreateTextureFromFile(directStruct.splashD3dDevice, fileLocation, &texture);
+	}
+
 	HRESULT createTextureFromFileEx() {
 		return D3DXCreateTextureFromFileEx(directStruct.d3dDevice, fileLocation, D3DX_DEFAULT, D3DX_DEFAULT,
 			D3DX_DEFAULT, NULL, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
 			D3DX_DEFAULT, D3DX_DEFAULT, D3DCOLOR_XRGB(redKey, greenKey, blueKey),
 			NULL, NULL, &texture);
 	}
+
 	LPDIRECT3DTEXTURE9 getTexture() {
 		return texture;
 	}
@@ -288,6 +297,7 @@ Texture hpPowerUpTexture("Assets/powerup1.png");
 Texture bulletPowerUpTexture("Assets/powerup2.png");
 Texture timePowerUpTexture("Assets/powerup3.png");
 Texture powerUpTexture(NULL);
+Texture splashTexture("Assets/splash.jpg");
 
 //Sprite Sheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
@@ -445,6 +455,8 @@ queue<int> powerUpIndexToRemove;
 int powerUpChosen;
 
 //Splash Screen
+int splashScreenWidth = 500;
+int splashScreenHeight = 500;
 int splashCount;
 int maxSplashCount = 5;
 
@@ -452,9 +464,6 @@ LRESULT CALLBACK SplashWindowProcedure(HWND hWnd2, UINT message, WPARAM wParam, 
 {
 	switch (message)
 	{
-	case WM_CLOSE:
-		DestroyWindow(wndStruct.g_hWnd2);
-		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -557,7 +566,7 @@ void createSplashWindow() {
 
 	RegisterClass(&wndStruct.splashWndClass);
 
-	wndStruct.g_hWnd2 = CreateWindowEx(0, wndStruct.splashWndClass.lpszClassName, "SplashScreen", WS_DISABLED | WS_POPUP, 500, 300, 500, 500, NULL, NULL, GetModuleHandle(NULL), NULL);
+	wndStruct.g_hWnd2 = CreateWindowEx(0, wndStruct.splashWndClass.lpszClassName, "SplashScreen", WS_DISABLED | WS_POPUP, 300, 300, splashScreenWidth, splashScreenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
 	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd2, 1);
@@ -596,6 +605,9 @@ bool windowIsRunning() {
 
 void cleanupWindow() {
 	UnregisterClass(wndStruct.wndClass.lpszClassName, GetModuleHandle(NULL));
+}
+
+void cleanupSplashWindow() {
 	UnregisterClass(wndStruct.splashWndClass.lpszClassName, GetModuleHandle(NULL));
 }
 
@@ -612,6 +624,24 @@ void createDirectX() {
 	directStruct.d3dPP.hDeviceWindow = wndStruct.g_hWnd;
 
 	HRESULT hr = directStruct.direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, wndStruct.g_hWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &directStruct.d3dPP, &directStruct.d3dDevice);
+
+	if (FAILED(hr))
+		cout << "Creating Directx Failed !!!";
+}
+
+void createSplashDirectX() {
+
+	ZeroMemory(&directStruct.splashD3dPP, sizeof(directStruct.splashD3dPP));
+
+	directStruct.splashD3dPP.Windowed = true;
+	directStruct.splashD3dPP.SwapEffect = D3DSWAPEFFECT_DISCARD;
+	directStruct.splashD3dPP.BackBufferFormat = D3DFMT_X8R8G8B8;
+	directStruct.splashD3dPP.BackBufferCount = 1;
+	directStruct.splashD3dPP.BackBufferWidth = splashScreenWidth;
+	directStruct.splashD3dPP.BackBufferHeight = splashScreenHeight;
+	directStruct.splashD3dPP.hDeviceWindow = wndStruct.g_hWnd2;
+
+	HRESULT hr = directStruct.splashDirect3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, wndStruct.g_hWnd2, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &directStruct.splashD3dPP, &directStruct.splashD3dDevice);
 
 	if (FAILED(hr))
 		cout << "Creating Directx Failed !!!";
@@ -795,9 +825,45 @@ void render() {
 	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
 }
 
+void splashRender() {
+	directStruct.splashD3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.splashD3dDevice->BeginScene();
+
+	sprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	sprite->Draw(splashTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	sprite->End();
+
+	directStruct.splashD3dDevice->EndScene();
+
+	directStruct.splashD3dDevice->Present(NULL, NULL, NULL, NULL);
+
+}
+
 void cleanupDirectX() {
 	directStruct.d3dDevice->Release();
 	directStruct.d3dDevice = NULL;
+}
+
+void cleanupSplashDirectX() {
+	directStruct.splashD3dDevice->Release();
+	directStruct.splashD3dDevice = NULL;
+}
+
+void createSplashSprite() {
+	HRESULT hr = D3DXCreateSprite(directStruct.splashD3dDevice, &sprite);
+
+	if (FAILED(hr)) {
+		cout << "Create Sprite Failed!!!";
+	}
+
+	hr = splashTexture.createSplashTextureFromFile();
+
+	if (FAILED(hr)) {
+		cout << "Create Texture from File Failed!!!";
+	}
 }
 
 void createSprite() {
@@ -866,6 +932,11 @@ void cleanupSprite() {
 	
 	font->Release();
 	font = NULL;
+}
+
+void cleanupSplashSprite() {
+	splashTexture.releaseTexture();
+	splashTexture.setTexture(NULL);
 }
 
 void createDirectInput() {
@@ -1244,12 +1315,22 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 
 	createSplashWindow();
 
-	while (splashCount <= maxSplashCount && windowIsRunning()) {
-		updateSplash(splashTimer->FramesToUpdate());
+	createSplashDirectX();
+
+	createSplashSprite();
+
+	while (splashCount < maxSplashCount && windowIsRunning()) {
+		splashRender();
 		if (splashCount == maxSplashCount) {
 			DestroyWindow(wndStruct.g_hWnd2);
+			break;
 		}
+		updateSplash(splashTimer->FramesToUpdate());
 	}
+
+	cleanupSplashSprite();
+	cleanupSplashDirectX();
+	cleanupSplashWindow();
 
 	createWindow();
 
