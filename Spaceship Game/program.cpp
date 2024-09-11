@@ -645,9 +645,6 @@ void spriteRender() {
 	timerTextRect.bottom = 125;
 
 	//Draw Sprite
-	pointerTrans.transform();
-	sprite->SetTransform(&pointerTrans.getMat());
-	sprite->Draw(pointerTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	thrustTrans.transform();
 	sprite->SetTransform(&thrustTrans.getMat());
@@ -685,6 +682,12 @@ void spriteRender() {
 		}
 		sprite->Draw(powerUpTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
+
+
+	pointerTrans.transform();
+	sprite->SetTransform(&pointerTrans.getMat());
+	sprite->Draw(pointerTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
 	//Draw Mouse Position Font
 	textTrans.transform();
 
