@@ -12,7 +12,6 @@
 #include <cmath>
 #include <ctime>
 #include <cstdlib>
-#include <queue>
 #include "FrameTimer.h"
 #include "AudioManager.h"
 #define WIN32_LEAN_AND_MEAN
@@ -429,7 +428,6 @@ int bulletInterval = defaultBulletInterval;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
-queue<int> bulletIndexToRemove;
 
 // Asteroid
 int asteroidEntry = 0;
@@ -438,7 +436,6 @@ float asteroidPower = 10;
 float asteroidRotation;
 D3DXVECTOR2 asteroidStartPosition(500,-100);
 D3DXVECTOR2 asteroidPosition;
-queue<int> asteroidIndexToRemove;
 
 //Power Up
 boolean timeStop;
@@ -452,7 +449,6 @@ int powerUpEntry = 0;
 D3DXVECTOR2 powerUpPosition;
 int powerUpSpawnRate = 5;
 int powerUpSpawnRateLeft = powerUpSpawnRate;
-queue<int> powerUpIndexToRemove;
 int powerUpChosen;
 
 //Splash Screen
@@ -486,15 +482,6 @@ void resetStage() {
 	timeStopDurationLeft = 0;
 	bulletPowerUpDurationLeft = 0;
 	powerUpSpawnRateLeft = powerUpSpawnRate;
-	while (!bulletIndexToRemove.empty()) {
-		bulletIndexToRemove.pop();
-	}
-	while (!asteroidIndexToRemove.empty()) {
-		asteroidIndexToRemove.pop();
-	}
-	while (!powerUpIndexToRemove.empty()) {
-		powerUpIndexToRemove.pop();
-	}
 }
 
 LRESULT CALLBACK SplashWindowProcedure(HWND hWnd2, UINT message, WPARAM wParam, LPARAM lParam)
@@ -1018,29 +1005,23 @@ void physics() {
 	// Collision Between Bullet and Wall
 	for (int i = 0; i < bulletEntry; i++) {
 		if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
-			bulletIndexToRemove.push(i);
+			removeBulletGap(i);
+			break;
 		}
-	}
-	while (!bulletIndexToRemove.empty()) {
-		removeBulletGap(bulletIndexToRemove.front());
-		bulletIndexToRemove.pop();
 	}
 	// Collision Between Asteroid and Wall
 	for (int i = 0; i < asteroidEntry; i++) {
 
 		if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
-			asteroidIndexToRemove.push(i);
+			removeAsteroidGap(i);
+			break;
 		}
-	}
-	while (!asteroidIndexToRemove.empty()) {
-		removeAsteroidGap(asteroidIndexToRemove.front());
-		asteroidIndexToRemove.pop();
 	}
 
 	// Collision Between Asteroid and Spaceship
 	for (int i = 0; i < asteroidEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
-			asteroidIndexToRemove.push(i);
+			removeAsteroidGap(i);
 			if (lives > 0) {
 				myAudioManager->PlayHit();
 				lives--;
@@ -1054,34 +1035,25 @@ void physics() {
 					highScores = scores;
 				}
 			}
+			break;
 		}
-	}
-	while (!asteroidIndexToRemove.empty()) {
-		removeAsteroidGap(asteroidIndexToRemove.front());
-		asteroidIndexToRemove.pop();
 	}
 	// Collision Between Bullet and Asteroid
 	for (int i = 0; i < bulletEntry; i++) {
 		for (int j = 0; j < asteroidEntry; j++) {
 			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
-				bulletIndexToRemove.push(i);
-				asteroidIndexToRemove.push(j);
+				removeBulletGap(i);
+				removeAsteroidGap(j);
 				scores++;
+				goto end;
 			}
 		}
 	}
-	while (!bulletIndexToRemove.empty()) {
-		removeBulletGap(bulletIndexToRemove.front());
-		bulletIndexToRemove.pop();
-	}
-	while (!asteroidIndexToRemove.empty()) {
-		removeAsteroidGap(asteroidIndexToRemove.front());
-		asteroidIndexToRemove.pop();
-	}
+	end:
 	// Collision Between Spaceship and Powerup
 	for (int i = 0; i < powerUpEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
-			powerUpIndexToRemove.push(i);
+			removePowerUpGap(i);
 			if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
 				myAudioManager->PlayPickUp();
 				if (lives < 3) {
@@ -1099,11 +1071,8 @@ void physics() {
 				timeStop = true;
 				timeStopDurationLeft = timeStopDuration;
 			}
+			break;
 		}
-	}
-	while (!powerUpIndexToRemove.empty()) {
-		removePowerUpGap(powerUpIndexToRemove.front());
-		powerUpIndexToRemove.pop();
 	}
 }
 
