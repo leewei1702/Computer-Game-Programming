@@ -17,8 +17,8 @@
 #define WIN32_LEAN_AND_MEAN
 
 using namespace std;
-enum powerUp{hpPowerUp, bulletPowerUp, timePowerUp};
-enum UIController{MainMenu, GameMenu, GameOverMenu};
+enum powerUp { hpPowerUp, bulletPowerUp, timePowerUp };
+enum UIController { MainMenu, GameMenu, GameOverMenu };
 
 //Window Structure
 struct {
@@ -62,7 +62,7 @@ public:
 		this->totalSpriteHeight = totalSpriteHeight;
 		this->spriteRow = spriteRow;
 		this->spriteCol = spriteCol;
-		this->currentFrame = currentFrame-1;
+		this->currentFrame = currentFrame - 1;
 		this->maxFrame = maxFrame;
 		this->spriteWidth = totalSpriteWidth / spriteCol;
 		this->spriteHeight = totalSpriteHeight / spriteRow;
@@ -115,7 +115,7 @@ public:
 		this->currentMovement = currentMovement;
 	}
 	void setCurrentFrame(int currentFrame) {
-		this->currentFrame = currentFrame-1;
+		this->currentFrame = currentFrame - 1;
 	}
 	void staticFrame() {
 		currentFrame = 0;
@@ -128,7 +128,7 @@ public:
 	}
 	void nextThrustFrame() {
 		currentFrame++;
-		if (currentFrame > maxFrame-1) {
+		if (currentFrame > maxFrame - 1) {
 			currentFrame = 0;
 		}
 	}
@@ -303,7 +303,7 @@ Texture splashTexture("Assets/splash.jpg");
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
-SpriteSheet pointerSprite(30,30);
+SpriteSheet pointerSprite(30, 30);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
@@ -321,6 +321,12 @@ SpriteTransform turretTrans;
 SpriteTransform bulletTrans[100];
 SpriteTransform asteroidTrans[100];
 SpriteTransform powerUpTrans[30];
+SpriteTransform textTrans;
+SpriteTransform timerTextTrans;
+SpriteTransform livesTextTrans;
+SpriteTransform helpTextTrans;
+SpriteTransform scoresTextTrans;
+SpriteTransform highScoresTextTrans;
 
 //Default value for rgb color
 int red = 0;
@@ -434,7 +440,7 @@ int asteroidEntry = 0;
 D3DXVECTOR2 asteroidVelocity;
 float asteroidPower = 10;
 float asteroidRotation;
-D3DXVECTOR2 asteroidStartPosition(500,-100);
+D3DXVECTOR2 asteroidStartPosition(500, -100);
 D3DXVECTOR2 asteroidPosition;
 
 //Power Up
@@ -502,13 +508,13 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
-		//Main menu start button
+			//Main menu start button
 		case 1:
 			DestroyWindow(startButton);
 			currentMenu = GameMenu;
 			ShowCursor(false);
 			break;
-	    //Game over continue button
+			//Game over continue button
 		case 2:
 			createDirectInput();
 			DestroyWindow(gameOverContinueButton);
@@ -608,7 +614,7 @@ void createWindow() {
 	RegisterClass(&wndStruct.wndClass);
 
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
-	
+
 	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd, 1);
 }
@@ -671,17 +677,17 @@ void createSplashDirectX() {
 void spriteRender() {
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
 	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
-    pointerTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	pointerTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
 	spaceshipTrans = SpriteTransform(D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2, spaceshipSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition);
-    thrustTrans = SpriteTransform(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition+D3DXVECTOR2(spaceshipSprite.getSpriteWidth()/2-4, spaceshipSprite.getSpriteHeight()));
+	thrustTrans = SpriteTransform(D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(thrustSprite.getSpriteWidth() / 2, thrustSprite.getSpriteHeight() / 2), spaceshipRotation, spaceshipPosition + D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 - 4, spaceshipSprite.getSpriteHeight()));
 	turretTrans = SpriteTransform(D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), 0, D3DXVECTOR2(0.35, 0.35), D3DXVECTOR2(turretSprite.getSpriteWidth() / 2, turretSprite.getSpriteHeight() / 2), turretRotation, turretPosition);
 
-	SpriteTransform textTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800,100));
-	SpriteTransform timerTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
-	SpriteTransform livesTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
-	SpriteTransform helpTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 35));
-	SpriteTransform scoresTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 70));
-	SpriteTransform highScoresTextTrans(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 105));
+	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(800, 100));
+	timerTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
+	livesTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
+	helpTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 35));
+	scoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 70));
+	highScoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 105));
 
 	//Text
 	textRect.left = 0;
@@ -709,15 +715,15 @@ void spriteRender() {
 	sprite->SetTransform(&turretTrans.getMat());
 	sprite->Draw(turretTexture.getTexture(), &turretSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
-	for(int i=0; i< bulletEntry; i++){
-			bulletTrans[i].transform();
-			sprite->SetTransform(&bulletTrans[i].getMat());
-			sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	for (int i = 0; i < bulletEntry; i++) {
+		bulletTrans[i].transform();
+		sprite->SetTransform(&bulletTrans[i].getMat());
+		sprite->Draw(bulletTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
 	for (int i = 0; i < asteroidEntry; i++) {
-		    asteroidTrans[i].transform();
-		    sprite->SetTransform(&asteroidTrans[i].getMat());
-		    sprite->Draw(asteroidTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+		asteroidTrans[i].transform();
+		sprite->SetTransform(&asteroidTrans[i].getMat());
+		sprite->Draw(asteroidTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 	}
 	for (int i = 0; i < powerUpEntry; i++) {
 		powerUpTrans[i].transform();
@@ -810,7 +816,7 @@ void spriteRender() {
 		scoresText[i + strScoresPrefix.length()] = strScoresPostfix[i];
 	}
 	font->DrawText(sprite, scoresText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
-	
+
 	for (int i = 0; i < sizeof(scoresText); i++) {
 		scoresText[i] = ' ';
 	}
@@ -901,7 +907,7 @@ void createSprite() {
 	if (FAILED(hr)) {
 		cout << "Create Font Failed!!!";
 	}
-	
+
 	hr = pointerTexture.createTextureFromFile();
 	hr = thrustTexture.createTextureFromFile();
 	hr = spaceshipTexture.createTextureFromFile();
@@ -950,7 +956,7 @@ void cleanupSprite() {
 
 	powerUpTexture.releaseTexture();
 	powerUpTexture.setTexture(NULL);
-	
+
 	font->Release();
 	font = NULL;
 }
@@ -1049,7 +1055,7 @@ void physics() {
 			}
 		}
 	}
-	end:
+end:
 	// Collision Between Spaceship and Powerup
 	for (int i = 0; i < powerUpEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
@@ -1077,12 +1083,12 @@ void physics() {
 }
 
 void update(int frames) {
+	turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
 	if (frames > 1) {
 		frames = 1;
 	}
 	for (int i = 0; i < frames; i++)
 	{
-		turretPosition = spaceshipPosition - D3DXVECTOR2(spaceshipSprite.getSpriteWidth() / 2 + 10, spaceshipSprite.getSpriteHeight() / 2 + 5);
 		// Bullet Movement
 		for (int i = 0; i < bulletEntry; i++) {
 			bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
@@ -1106,7 +1112,7 @@ void update(int frames) {
 			spaceshipSprite.staticFrame();
 		}
 		if (diKeys[DIK_A] & 0x80) {
-			spaceshipEngineForce.x += sin(270*PI/180) * spaceshipEnginePower;
+			spaceshipEngineForce.x += sin(270 * PI / 180) * spaceshipEnginePower;
 			spaceshipEngineForce.y += -cos(270 * PI / 180) * spaceshipEnginePower;
 			spaceshipAcceleration = spaceshipEngineForce / spaceshipMass;
 			spaceshipSprite.leftFrame();
@@ -1141,7 +1147,7 @@ void update(int frames) {
 		if ((diKeys[DIK_S] & 0x80) && (diKeys[DIK_D] & 0x80)) {
 			spaceshipSprite.rightFrame();
 		}
-	
+
 		spaceshipOldPosition = spaceshipPosition;
 
 		spaceshipVelocity += spaceshipAcceleration;
@@ -1173,14 +1179,14 @@ void update(int frames) {
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
 	}
-	
+
 	pointerCenterX = currentXpos + pointerSprite.getTotalSpriteWidth() / 2;
 	pointerCenterY = currentYpos + pointerSprite.getTotalSpriteHeight() / 2;
 	turretCenterX = turretPosition.x + turretSprite.getSpriteWidth() / 2;
 	turretCenterY = turretPosition.y + turretSprite.getSpriteHeight() / 2;
 
 	if (pointerCenterY > turretCenterY) {
-		turretRotation = PI - asin((pointerCenterX - turretCenterX)/ sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
+		turretRotation = PI - asin((pointerCenterX - turretCenterX) / sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
 	}
 	else {
 		turretRotation = asin((pointerCenterX - turretCenterX) / sqrt(pow(pointerCenterX - turretCenterX, 2) + pow(turretCenterY - pointerCenterY, 2)));
@@ -1225,7 +1231,7 @@ void updateBullet(int frames) {
 			myAudioManager->PlayShoot(screenWidth, spaceshipPosition.x);
 		}
 	}
-	
+
 }
 void updateThrust(int frames) {
 	if (frames > 1) {
@@ -1240,7 +1246,7 @@ void updateAsteroid(int frames) {
 		frames = 1;
 	}
 	if (!timeStop) {
-		asteroidStartPosition.x = 50+ (rand() % 1100);
+		asteroidStartPosition.x = 50 + (rand() % 1100);
 		for (int i = 0; i < frames; i++) {
 			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
 			asteroidEntry++;
@@ -1292,7 +1298,7 @@ void Sound() {
 	myAudioManager->UpdateSound();
 }
 
-void updateSplash (int frames) {
+void updateSplash(int frames) {
 	if (frames > 1) {
 		frames = 1;
 	}
@@ -1349,7 +1355,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	{
 
 		if (currentMenu == MainMenu) {
-			CreateWindow("STATIC", "Welcome to Project Spaceship", WS_VISIBLE | WS_CHILD, screenWidth / 2, screenHeight / 2-100, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
+			CreateWindow("STATIC", "Welcome to Project Spaceship", WS_VISIBLE | WS_CHILD, screenWidth / 2, screenHeight / 2 - 100, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
 			startButton = CreateWindow("BUTTON", "Start Game", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 2, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
 			currentMenu = 4;
 		}
