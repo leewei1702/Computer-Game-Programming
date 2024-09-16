@@ -1367,9 +1367,8 @@ void mainMenuUpdate() {
 	}
 	if (mouseState.rgbButtons[0] & 0x80) {
 		if (cursorTrans.getTrans().x  >= buttonBgTrans.getTrans().x && cursorTrans.getTrans().x <= buttonBgTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= buttonBgTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y  >= buttonBgTrans.getTrans().y) {
-
+			myAudioManager->PlayButtonClick();
 			currentMenu = SpaceshipSelectionMenu;
-
 		}
 
 	}
@@ -1441,16 +1440,18 @@ void spaceshipSelectionMenuUpdate() {
 	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
 		currentXpos -= mouseState.lX;
 	}
-	if (currentTransitionPos == 0) {
+	if (currentTransitionPos == 0 && afterTransition == false) {
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= spaceshipSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= spaceshipSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= spaceshipSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= spaceshipSelectionTrans.getTrans().y) {
 				currentSpaceshipTexture = spaceshipTexture;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= spaceship2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= spaceship2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= spaceship2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= spaceship2SelectionTrans.getTrans().y) {
 				currentSpaceshipTexture = spaceship2Texture;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
@@ -1563,22 +1564,25 @@ void crosshairSelectionMenuUpdate() {
 	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
 		currentXpos -= mouseState.lX;
 	}
-	if (currentTransitionPos == 0) {
+	if (currentTransitionPos == 0 && afterTransition == false) {
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= crosshairSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshairSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshairSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshairSelectionTrans.getTrans().y) {
 				pointerTexture = crosshairTexture;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= crosshair2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair2SelectionTrans.getTrans().y) {
 				pointerTexture = crosshair2Texture;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= crosshair3SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair3SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair3SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair3SelectionTrans.getTrans().y) {
 				pointerTexture = crosshair3Texture;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
@@ -1707,16 +1711,18 @@ void gameOverMenuUpdate() {
 	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
 		currentXpos -= mouseState.lX;
 	}
-	if (currentTransitionPos == 0) {
+	if (currentTransitionPos == 0 && afterTransition == false) {
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= continueButtonTrans.getTrans().x && cursorTrans.getTrans().x <= continueButtonTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= continueButtonTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= continueButtonTrans.getTrans().y) {
 				gameOverAction = Retry;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
 		if (mouseState.rgbButtons[0] & 0x80) {
 			if (cursorTrans.getTrans().x >= exitButtonTrans.getTrans().x && cursorTrans.getTrans().x <= exitButtonTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= exitButtonTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= exitButtonTrans.getTrans().y) {
 				gameOverAction = Exit;
+				myAudioManager->PlayButtonClick();
 				afterTransition = true;
 			}
 		}
@@ -1919,21 +1925,25 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 		if (currentMenu == MainMenu) {
 			getInput();
 			mainMenuUpdate();
+			Sound();
 			mainMenuRender();
 		}
 		if (currentMenu == SpaceshipSelectionMenu) {
 			getInput();
 			spaceshipSelectionMenuUpdate();
+			Sound();
 			spaceshipSelectionMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == CrosshairSelectionMenu) {
 			getInput();
 			crosshairSelectionMenuUpdate();
+			Sound();
 			crosshairSelectionMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == GameOverMenu) {
 			getInput();
 			gameOverMenuUpdate();
+			Sound();
 			gameOverMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == GameMenu) {
