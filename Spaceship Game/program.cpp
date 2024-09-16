@@ -19,6 +19,7 @@
 using namespace std;
 enum powerUp { hpPowerUp, bulletPowerUp, timePowerUp };
 enum UIController { MainMenu, GameMenu, GameOverMenu, SpaceshipSelectionMenu, CrosshairSelectionMenu };
+enum gameOver {Retry, Exit};
 
 //Window Structure
 struct {
@@ -513,11 +514,8 @@ string strSurvived = "You survived for ";
 int totalTextLength;
 char survivedTimerText[50];
 
-//Game Main Menu
-HWND startButton;
-//Game Over
-HWND gameOverContinueButton;
-HWND gameOverExitButton;
+//Game Over Button Action
+int gameOverAction;
 
 void render();
 void createDirectInput();
@@ -530,6 +528,8 @@ void resetStage() {
 	bulletEntry = 0;
 	powerUpEntry = 0;
 	scores = 0;
+	toggleShoot = false;
+	spaceshipSprite.setCurrentFrame(1);
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
 	timeStopDurationLeft = 0;
@@ -637,7 +637,7 @@ void createWindow() {
 
 	RegisterClass(&wndStruct.wndClass);
 
-	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
+	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Spaceship Xtreme", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
 	ShowWindow(wndStruct.g_hWnd, 1);
 	ShowCursor(false);
@@ -1017,7 +1017,7 @@ void createDirectInput() {
 
 	dInputMouseDevice->SetDataFormat(&c_dfDIMouse);
 
-	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
+	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
 }
 
 void getInput() {
@@ -1701,12 +1701,14 @@ void gameOverMenuUpdate() {
 	}
 	if (currentTransitionPos == 0) {
 		if (mouseState.rgbButtons[0] & 0x80) {
-			if (cursorTrans.getTrans().x >= crosshairSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshairSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshairSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshairSelectionTrans.getTrans().y) {
+			if (cursorTrans.getTrans().x >= continueButtonTrans.getTrans().x && cursorTrans.getTrans().x <= continueButtonTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= continueButtonTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= continueButtonTrans.getTrans().y) {
+				gameOverAction = Retry;
 				afterTransition = true;
 			}
 		}
 		if (mouseState.rgbButtons[0] & 0x80) {
-			if (cursorTrans.getTrans().x >= crosshair2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair2SelectionTrans.getTrans().y) {
+			if (cursorTrans.getTrans().x >= exitButtonTrans.getTrans().x && cursorTrans.getTrans().x <= exitButtonTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= exitButtonTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= exitButtonTrans.getTrans().y) {
+				gameOverAction = Exit;
 				afterTransition = true;
 			}
 		}
@@ -1730,7 +1732,14 @@ void gameOverMenuSpriteRender(int frames) {
 		if (currentTransitionPos <= -3000) {
 			afterTransition = false;
 			currentTransitionPos = 2000;
-			currentMenu = GameMenu;
+			if (gameOverAction == Retry) {
+				resetStage();
+				currentMenu = GameMenu;
+			}
+			if (gameOverAction == Exit) {
+				resetStage();
+				currentMenu = MainMenu;
+			}
 		}
 	}
 	sprite->Begin(D3DXSPRITE_ALPHABLEND);
