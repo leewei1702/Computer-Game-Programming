@@ -497,7 +497,7 @@ int powerUpChosen;
 int splashScreenWidth = 500;
 int splashScreenHeight = 500;
 int splashCount;
-int maxSplashCount = 1;
+int maxSplashCount = 5;
 
 //UI Controller
 int currentMenu = MainMenu;
@@ -1052,7 +1052,8 @@ void cleanupInput() {
 	dInput = NULL;
 }
 
-void physics() {
+void collisionDetection() {
+
 	// Collision Between Bullet and Wall
 	for (int i = 0; i < bulletEntry; i++) {
 		if (bulletTrans[i].getTrans().x > screenWidth - bulletSprite.getTotalSpriteWidth() || bulletTrans[i].getTrans().x < 0 || bulletTrans[i].getTrans().y < 0 || bulletTrans[i].getTrans().y > screenHeight - bulletSprite.getTotalSpriteHeight()) {
@@ -1072,7 +1073,6 @@ void physics() {
 	// Collision Between Asteroid and Spaceship
 	for (int i = 0; i < asteroidEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
-			removeAsteroidGap(i);
 			if (lives > 0) {
 				myAudioManager->PlayHit();
 				lives--;
@@ -1085,6 +1085,7 @@ void physics() {
 					highScores = scores;
 				}
 			}
+			removeAsteroidGap(i);
 			break;
 		}
 	}
@@ -1092,9 +1093,9 @@ void physics() {
 	for (int i = 0; i < bulletEntry; i++) {
 		for (int j = 0; j < asteroidEntry; j++) {
 			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
+				scores++;
 				removeBulletGap(i);
 				removeAsteroidGap(j);
-				scores++;
 				goto end;
 			}
 		}
@@ -1103,24 +1104,27 @@ end:
 	// Collision Between Spaceship and Powerup
 	for (int i = 0; i < powerUpEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
-			removePowerUpGap(i);
 			if (powerUpTrans[i].getPowerUpChosen() == hpPowerUp) {
+				cout << "HP PICKED" << endl;
 				myAudioManager->PlayPickUp();
 				if (lives < 3) {
 					lives++;
 				}
 			}
 			if (powerUpTrans[i].getPowerUpChosen() == bulletPowerUp) {
+				cout << "BULLET PICKED" << endl;
 				myAudioManager->PlayPickUp();
 				bulletTimer->init(bulletPowerUpSpeed);
 				bulletPowerUpPicked = true;
 				bulletPowerUpDurationLeft = bulletPowerUpDuration;
 			}
 			if (powerUpTrans[i].getPowerUpChosen() == timePowerUp) {
+				cout << "TIMESTOP PICKED" << endl;
 				myAudioManager->PlayTheWorld();
 				timeStop = true;
 				timeStopDurationLeft = timeStopDuration;
 			}
+			removePowerUpGap(i);
 			break;
 		}
 	}
@@ -1948,12 +1952,12 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 		}
 		if (currentMenu == GameMenu) {
 			getInput();
-			physics();
 			updateBullet(bulletTimer->FramesToUpdate());
 			updateThrust(thrustTimer->FramesToUpdate());
 			updateAsteroid(asteroidTimer->FramesToUpdate());
 			updateWave(waveTimer->FramesToUpdate());
 			update(gameTimer->FramesToUpdate());
+			collisionDetection();
 			Sound();
 			render();
 		}
