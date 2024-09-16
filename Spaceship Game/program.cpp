@@ -18,7 +18,7 @@
 
 using namespace std;
 enum powerUp { hpPowerUp, bulletPowerUp, timePowerUp };
-enum UIController { MainMenu, GameMenu, GameOverMenu };
+enum UIController { MainMenu, GameMenu, GameOverMenu, SpaceshipSelectionMenu, CrosshairSelectionMenu };
 
 //Window Structure
 struct {
@@ -283,12 +283,18 @@ public:
 	}
 	void releaseTexture() {
 		texture->Release();
+		texture = NULL;
 	}
 };
 
 //Textures
-Texture pointerTexture("Assets/crosshair.png");
+Texture pointerTexture(NULL);
+Texture crosshairTexture("Assets/crosshair.png");
+Texture crosshair2Texture("Assets/crosshair2.png");
+Texture crosshair3Texture("Assets/crosshair3.png");
 Texture spaceshipTexture("Assets/ship.png");
+Texture spaceship2Texture("Assets/ship2.png");
+Texture currentSpaceshipTexture(NULL);
 Texture thrustTexture("Assets/thrust.png");
 Texture turretTexture("Assets/turret.png");
 Texture asteroidTexture("Assets/asteroid.png");
@@ -298,12 +304,17 @@ Texture bulletPowerUpTexture("Assets/powerup2.png");
 Texture timePowerUpTexture("Assets/powerup3.png");
 Texture powerUpTexture(NULL);
 Texture splashTexture("Assets/splash.jpg");
+Texture cursorTexture("Assets/cursor.png");
+Texture buttonBgTexture("Assets/buttonBg.png");
+Texture bgTexture("Assets/bg.png");
 
 //Sprite Sheet
 //Sprite Sheet Object - (totalWidth, totalHeight, row, col, currentFrame, maxFrame)
 //                    - (totalWidth, totalHeight)
 //                    - (spriteRectLeft, spriteRectRight, spriteRectTop, spriteRectBottom)
 SpriteSheet pointerSprite(30, 30);
+SpriteSheet cursorSprite(30, 30);
+SpriteSheet buttonBgSprite(250, 120);
 SpriteSheet spaceshipSprite(250, 50, 1, 5, 1, 5);
 SpriteSheet thrustSprite(32, 20, 1, 2, 1, 2);
 SpriteSheet turretSprite(1024, 128, 1, 8, 1, 8);
@@ -315,18 +326,35 @@ SpriteSheet timePowerUpSprite(35, 35);
 
 //Sprite Transformation
 SpriteTransform pointerTrans;
+SpriteTransform cursorTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
 SpriteTransform bulletTrans[100];
 SpriteTransform asteroidTrans[100];
 SpriteTransform powerUpTrans[30];
+SpriteTransform buttonBgTrans;
 SpriteTransform textTrans;
 SpriteTransform timerTextTrans;
 SpriteTransform livesTextTrans;
 SpriteTransform helpTextTrans;
 SpriteTransform scoresTextTrans;
 SpriteTransform highScoresTextTrans;
+SpriteTransform bgTrans;
+SpriteTransform spaceship2Trans;
+SpriteTransform spaceshipSelectionTrans;
+SpriteTransform spaceship2SelectionTrans;
+SpriteTransform spaceshipSelectionTextTrans;
+SpriteTransform spaceship2SelectionTextTrans;
+SpriteTransform crosshairTrans;
+SpriteTransform crosshair2Trans;
+SpriteTransform crosshair3Trans;
+SpriteTransform crosshairSelectionTrans;
+SpriteTransform crosshair2SelectionTrans;
+SpriteTransform crosshair3SelectionTrans;
+SpriteTransform crosshairSelectionTextTrans;
+SpriteTransform crosshair2SelectionTextTrans;
+SpriteTransform crosshair3SelectionTextTrans;
 
 //Default value for rgb color
 int red = 0;
@@ -396,6 +424,7 @@ FrameTimer* thrustTimer = new FrameTimer();
 FrameTimer* asteroidTimer = new FrameTimer();
 FrameTimer* waveTimer = new FrameTimer();
 FrameTimer* splashTimer = new FrameTimer();
+FrameTimer* transitionTimer = new FrameTimer();
 // Audio Object
 AudioManager* myAudioManager = new AudioManager();
 
@@ -461,10 +490,16 @@ int powerUpChosen;
 int splashScreenWidth = 500;
 int splashScreenHeight = 500;
 int splashCount;
-int maxSplashCount = 5;
+int maxSplashCount = 1;
 
 //UI Controller
 int currentMenu = MainMenu;
+
+//Transition
+float currentTransitionPos = 2000;
+float beforeTransitionPos = 80;
+float afterTransitionPos = 80;
+boolean afterTransition = false;
 
 //Game Main Menu
 HWND startButton;
@@ -508,12 +543,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {
-			//Main menu start button
-		case 1:
-			DestroyWindow(startButton);
-			currentMenu = GameMenu;
-			ShowCursor(false);
-			break;
 			//Game over continue button
 		case 2:
 			createDirectInput();
@@ -596,8 +625,8 @@ void createSplashWindow() {
 
 	wndStruct.g_hWnd2 = CreateWindowEx(0, wndStruct.splashWndClass.lpszClassName, "SplashScreen", WS_DISABLED | WS_POPUP, 300, 300, splashScreenWidth, splashScreenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
-	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd2, 1);
+	ShowCursor(true);
 }
 
 void createWindow() {
@@ -615,8 +644,9 @@ void createWindow() {
 
 	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Project Spaceship", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
-	ShowCursor(true);
 	ShowWindow(wndStruct.g_hWnd, 1);
+	ShowCursor(false);
+	ShowCursor(false);
 }
 
 bool windowIsRunning() {
@@ -709,7 +739,7 @@ void spriteRender() {
 
 	spaceshipTrans.transform();
 	sprite->SetTransform(&spaceshipTrans.getMat());
-	sprite->Draw(spaceshipTexture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+	sprite->Draw(currentSpaceshipTexture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	turretTrans.transform();
 	sprite->SetTransform(&turretTrans.getMat());
@@ -908,7 +938,6 @@ void createSprite() {
 		cout << "Create Font Failed!!!";
 	}
 
-	hr = pointerTexture.createTextureFromFile();
 	hr = thrustTexture.createTextureFromFile();
 	hr = spaceshipTexture.createTextureFromFile();
 	hr = turretTexture.createTextureFromFile();
@@ -917,6 +946,13 @@ void createSprite() {
 	hr = hpPowerUpTexture.createTextureFromFile();
 	hr = bulletPowerUpTexture.createTextureFromFile();
 	hr = timePowerUpTexture.createTextureFromFile();
+	hr = cursorTexture.createTextureFromFile();
+	hr = buttonBgTexture.createTextureFromFile();
+	hr = bgTexture.createTextureFromFile();
+	hr = spaceship2Texture.createTextureFromFile();
+	hr = crosshairTexture.createTextureFromFile();
+	hr = crosshair2Texture.createTextureFromFile();
+	hr = crosshair3Texture.createTextureFromFile();
 
 	if (FAILED(hr)) {
 		cout << "Create Texture from File Failed!!!";
@@ -928,34 +964,40 @@ void cleanupSprite() {
 	sprite = NULL;
 
 	pointerTexture.releaseTexture();
-	pointerTexture.setTexture(NULL);
 
 	thrustTexture.releaseTexture();
-	thrustTexture.setTexture(NULL);
 
 	spaceshipTexture.releaseTexture();
-	spaceshipTexture.setTexture(NULL);
 
 	turretTexture.releaseTexture();
-	turretTexture.setTexture(NULL);
 
 	asteroidTexture.releaseTexture();
-	asteroidTexture.setTexture(NULL);
 
 	bulletTexture.releaseTexture();
-	bulletTexture.setTexture(NULL);
 
 	hpPowerUpTexture.releaseTexture();
-	hpPowerUpTexture.setTexture(NULL);
 
 	bulletPowerUpTexture.releaseTexture();
-	bulletPowerUpTexture.setTexture(NULL);
 
 	timePowerUpTexture.releaseTexture();
-	timePowerUpTexture.setTexture(NULL);
 
 	powerUpTexture.releaseTexture();
-	powerUpTexture.setTexture(NULL);
+
+	cursorTexture.releaseTexture();
+
+	buttonBgTexture.releaseTexture();
+
+	bgTexture.releaseTexture();
+
+	spaceship2Texture.releaseTexture();
+
+	currentSpaceshipTexture.releaseTexture();
+
+	crosshairTexture.releaseTexture();
+
+	crosshair2Texture.releaseTexture();
+
+	crosshair3Texture.releaseTexture();
 
 	font->Release();
 	font = NULL;
@@ -980,7 +1022,7 @@ void createDirectInput() {
 
 	dInputMouseDevice->SetDataFormat(&c_dfDIMouse);
 
-	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_EXCLUSIVE);
+	dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 }
 
 void getInput() {
@@ -1307,6 +1349,344 @@ void updateSplash(int frames) {
 	}
 }
 
+void mainMenuUpdate() {
+
+	if (currentYpos >= 0 && currentYpos <= screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos += mouseState.lY;
+	}
+	if (currentYpos < 0 || currentYpos > screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos -= mouseState.lY;
+	}
+	if (currentXpos >= 0 && currentXpos <= screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos += mouseState.lX;
+	}
+	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos -= mouseState.lX;
+	}
+	if (mouseState.rgbButtons[0] & 0x80) {
+		if (cursorTrans.getTrans().x  >= buttonBgTrans.getTrans().x && cursorTrans.getTrans().x <= buttonBgTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= buttonBgTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y  >= buttonBgTrans.getTrans().y) {
+
+			currentMenu = SpaceshipSelectionMenu;
+
+		}
+
+	}
+
+	if (diKeys[DIK_ESCAPE] & 0x80) {
+		PostQuitMessage(0);
+	}
+}
+
+void mainMenuSpriteRender() {
+	sprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
+	cursorTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	buttonBgTrans = SpriteTransform(D3DXVECTOR2(buttonBgSprite.getTotalSpriteWidth()/2, buttonBgSprite.getTotalSpriteHeight()/2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(300, 300));
+
+	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(380, 340));
+
+	//Text
+	textRect.left = 0;
+	textRect.top = 0;
+	textRect.right = 200;
+	textRect.bottom = 125;
+
+	//Draw Sprite
+
+	buttonBgTrans.transform();
+	sprite->SetTransform(&buttonBgTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	textTrans.transform();
+	sprite->SetTransform(&textTrans.getMat());
+	font->DrawText(sprite, "Start", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	cursorTrans.transform();
+	sprite->SetTransform(&cursorTrans.getMat());
+	sprite->Draw(cursorTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	sprite->End();
+}
+
+void mainMenuRender() {
+	directStruct.d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.d3dDevice->BeginScene();
+
+	mainMenuSpriteRender();
+
+	directStruct.d3dDevice->EndScene();
+
+	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
+}
+
+void spaceshipSelectionMenuUpdate() {
+	if (currentYpos >= 0 && currentYpos <= screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos += mouseState.lY;
+	}
+	if (currentYpos < 0 || currentYpos > screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos -= mouseState.lY;
+	}
+	if (currentXpos >= 0 && currentXpos <= screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos += mouseState.lX;
+	}
+	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos -= mouseState.lX;
+	}
+	if (currentTransitionPos == 0) {
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= spaceshipSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= spaceshipSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= spaceshipSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= spaceshipSelectionTrans.getTrans().y) {
+				currentSpaceshipTexture = spaceshipTexture;
+				afterTransition = true;
+			}
+		}
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= spaceship2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= spaceship2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= spaceship2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= spaceship2SelectionTrans.getTrans().y) {
+				currentSpaceshipTexture = spaceship2Texture;
+				afterTransition = true;
+			}
+		}
+	}
+	if (diKeys[DIK_ESCAPE] & 0x80) {
+		PostQuitMessage(0);
+	}
+}
+
+void spaceshipSelectionMenuSpriteRender(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
+	
+	for (int i = 0; i < frames; i++) {
+		if (currentTransitionPos > 0) {
+			currentTransitionPos -= beforeTransitionPos;
+		}
+		if (afterTransition) {
+			currentTransitionPos -= afterTransitionPos;
+		}
+		if (currentTransitionPos <= -3000) {
+			afterTransition = false;
+			currentTransitionPos = 2000;
+			currentMenu = CrosshairSelectionMenu;
+		}
+	}
+
+	sprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
+	cursorTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	bgTrans = SpriteTransform(D3DXVECTOR2(350, 256), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50+ currentTransitionPos, 50));
+	spaceshipTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(280+ currentTransitionPos, 180));
+	spaceship2Trans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(750+ currentTransitionPos, 180));
+	spaceshipSelectionTrans = SpriteTransform(D3DXVECTOR2(100, 57.5), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(220+ currentTransitionPos, 300));
+    spaceship2SelectionTrans = SpriteTransform(D3DXVECTOR2(100, 57.5), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(680+ currentTransitionPos, 300));
+
+	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(350+ currentTransitionPos, 100));
+	spaceshipSelectionTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(270+ currentTransitionPos, 330));
+	spaceship2SelectionTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(730+ currentTransitionPos, 330));
+
+	//Text
+	textRect.left = 0;
+	textRect.top = 0;
+	textRect.right = 300;
+	textRect.bottom = 125;
+
+	bgTrans.transform();
+	sprite->SetTransform(&bgTrans.getMat());
+	sprite->Draw(bgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	textTrans.transform();
+	sprite->SetTransform(&textTrans.getMat());
+	font->DrawText(sprite, "Choose your spaceship", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	spaceshipTrans.transform();
+	sprite->SetTransform(&spaceshipTrans.getMat());
+	sprite->Draw(spaceshipTexture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	spaceship2Trans.transform();
+	sprite->SetTransform(&spaceship2Trans.getMat());
+	sprite->Draw(spaceship2Texture.getTexture(), &spaceshipSprite.crop(), NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	spaceshipSelectionTrans.transform();
+	sprite->SetTransform(&spaceshipSelectionTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	spaceship2SelectionTrans.transform();
+	sprite->SetTransform(&spaceship2SelectionTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	spaceshipSelectionTextTrans.transform();
+	sprite->SetTransform(&spaceshipSelectionTextTrans.getMat());
+	font->DrawText(sprite, "SELECT", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	spaceship2SelectionTextTrans.transform();
+	sprite->SetTransform(&spaceship2SelectionTextTrans.getMat());
+	font->DrawText(sprite, "SELECT", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	cursorTrans.transform();
+	sprite->SetTransform(&cursorTrans.getMat());
+	sprite->Draw(cursorTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	sprite->End();
+}
+
+void spaceshipSelectionMenuRender(int frames) {
+	directStruct.d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.d3dDevice->BeginScene();
+
+	spaceshipSelectionMenuSpriteRender(frames);
+
+	directStruct.d3dDevice->EndScene();
+
+	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
+}
+
+void crosshairSelectionMenuUpdate() {
+	if (currentYpos >= 0 && currentYpos <= screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos += mouseState.lY;
+	}
+	if (currentYpos < 0 || currentYpos > screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos -= mouseState.lY;
+	}
+	if (currentXpos >= 0 && currentXpos <= screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos += mouseState.lX;
+	}
+	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos -= mouseState.lX;
+	}
+	if (currentTransitionPos == 0) {
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= crosshairSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshairSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshairSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshairSelectionTrans.getTrans().y) {
+				pointerTexture = crosshairTexture;
+				afterTransition = true;
+			}
+		}
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= crosshair2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair2SelectionTrans.getTrans().y) {
+				pointerTexture = crosshair2Texture;
+				afterTransition = true;
+			}
+		}
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= crosshair3SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair3SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair3SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair3SelectionTrans.getTrans().y) {
+				pointerTexture = crosshair3Texture;
+				afterTransition = true;
+			}
+		}
+	}
+	if (diKeys[DIK_ESCAPE] & 0x80) {
+		PostQuitMessage(0);
+	}
+}
+
+void crosshairSelectionMenuSpriteRender(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
+
+	for (int i = 0; i < frames; i++) {
+		if (currentTransitionPos > 0) {
+			currentTransitionPos -= beforeTransitionPos;
+		}
+		if (afterTransition) {
+			currentTransitionPos -= afterTransitionPos;
+		}
+		if (currentTransitionPos <= -3000) {
+			afterTransition = false;
+			currentTransitionPos = 2000;
+			currentMenu = GameMenu;
+		}
+	}
+
+	sprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	//Sprite Transform Object - (scalingCenter, scalingRotation, scaling, rotationCenter, rotation, trans)
+	cursorTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+	bgTrans = SpriteTransform(D3DXVECTOR2(350, 256), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50 + currentTransitionPos, 50));
+	crosshairTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(240 + currentTransitionPos, 180));
+	crosshair2Trans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(515 + currentTransitionPos, 180));
+	crosshair3Trans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(790 + currentTransitionPos, 180));
+	crosshairSelectionTrans = SpriteTransform(D3DXVECTOR2(100, 57.5), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(180 + currentTransitionPos, 300));
+	crosshair2SelectionTrans = SpriteTransform(D3DXVECTOR2(100, 57.5), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(455 + currentTransitionPos, 300));
+	crosshair3SelectionTrans = SpriteTransform(D3DXVECTOR2(100, 57.5), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(730 + currentTransitionPos, 300));
+
+	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(350 + currentTransitionPos, 100));
+	crosshairSelectionTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(230 + currentTransitionPos, 330));
+	crosshair2SelectionTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(505 + currentTransitionPos, 330));
+	crosshair3SelectionTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(780 + currentTransitionPos, 330));
+
+	//Text
+	textRect.left = 0;
+	textRect.top = 0;
+	textRect.right = 300;
+	textRect.bottom = 125;
+
+	bgTrans.transform();
+	sprite->SetTransform(&bgTrans.getMat());
+	sprite->Draw(bgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	textTrans.transform();
+	sprite->SetTransform(&textTrans.getMat());
+	font->DrawText(sprite, "Choose your crosshair", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	crosshairTrans.transform();
+	sprite->SetTransform(&crosshairTrans.getMat());
+	sprite->Draw(crosshairTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshair2Trans.transform();
+	sprite->SetTransform(&crosshair2Trans.getMat());
+	sprite->Draw(crosshair2Texture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshair3Trans.transform();
+	sprite->SetTransform(&crosshair3Trans.getMat());
+	sprite->Draw(crosshair3Texture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshairSelectionTrans.transform();
+	sprite->SetTransform(&crosshairSelectionTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshair2SelectionTrans.transform();
+	sprite->SetTransform(&crosshair2SelectionTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshair3SelectionTrans.transform();
+	sprite->SetTransform(&crosshair3SelectionTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	crosshairSelectionTextTrans.transform();
+	sprite->SetTransform(&crosshairSelectionTextTrans.getMat());
+	font->DrawText(sprite, "SELECT", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	crosshair2SelectionTextTrans.transform();
+	sprite->SetTransform(&crosshair2SelectionTextTrans.getMat());
+	font->DrawText(sprite, "SELECT", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	crosshair3SelectionTextTrans.transform();
+	sprite->SetTransform(&crosshair3SelectionTextTrans.getMat());
+	font->DrawText(sprite, "SELECT", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	cursorTrans.transform();
+	sprite->SetTransform(&cursorTrans.getMat());
+	sprite->Draw(cursorTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	sprite->End();
+}
+
+
+void crosshairSelectionMenuRender(int frames) {
+	directStruct.d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.d3dDevice->BeginScene();
+
+	crosshairSelectionMenuSpriteRender(frames);
+
+	directStruct.d3dDevice->EndScene();
+
+	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
+}
+
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
@@ -1322,6 +1702,8 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	waveTimer->init(1);
 
 	splashTimer->init(1);
+
+	transitionTimer->init(50);
 
 	createSplashWindow();
 
@@ -1355,9 +1737,19 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	{
 
 		if (currentMenu == MainMenu) {
-			CreateWindow("STATIC", "Welcome to Project Spaceship", WS_VISIBLE | WS_CHILD, screenWidth / 2, screenHeight / 2 - 100, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
-			startButton = CreateWindow("BUTTON", "Start Game", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 2, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)1, NULL, NULL);
-			currentMenu = 4;
+			getInput();
+			mainMenuUpdate();
+			mainMenuRender();
+		}
+		if (currentMenu == SpaceshipSelectionMenu) {
+			getInput();
+			spaceshipSelectionMenuUpdate();
+			spaceshipSelectionMenuRender(transitionTimer->FramesToUpdate());
+		}
+		if (currentMenu == CrosshairSelectionMenu) {
+			getInput();
+			crosshairSelectionMenuUpdate();
+			crosshairSelectionMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == GameOverMenu) {
 			gameOverContinueButton = CreateWindow("BUTTON", "Click to continue playing", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 3, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)2, NULL, NULL);
@@ -1366,7 +1758,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 			createDirectInput();
 			dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 			getInput();
-			currentMenu = 4;
+			currentMenu = 8;
 		}
 		if (currentMenu == GameMenu) {
 			getInput();
