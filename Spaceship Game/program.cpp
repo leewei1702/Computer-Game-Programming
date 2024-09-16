@@ -355,6 +355,11 @@ SpriteTransform crosshair3SelectionTrans;
 SpriteTransform crosshairSelectionTextTrans;
 SpriteTransform crosshair2SelectionTextTrans;
 SpriteTransform crosshair3SelectionTextTrans;
+SpriteTransform titleTextTrans;
+SpriteTransform continueButtonTrans;
+SpriteTransform exitButtonTrans;
+SpriteTransform continueTextTrans;
+SpriteTransform exitTextTrans;
 
 //Default value for rgb color
 int red = 0;
@@ -501,6 +506,13 @@ float beforeTransitionPos = 80;
 float afterTransitionPos = 80;
 boolean afterTransition = false;
 
+//Game Over Text
+string strSec = " seconds ";
+string strMin = " minutes ";
+string strSurvived = "You survived for ";
+int totalTextLength;
+char survivedTimerText[50];
+
 //Game Main Menu
 HWND startButton;
 //Game Over
@@ -540,23 +552,6 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 {
 	switch (message)
 	{
-
-	case WM_COMMAND:
-		switch (LOWORD(wParam)) {
-			//Game over continue button
-		case 2:
-			createDirectInput();
-			DestroyWindow(gameOverContinueButton);
-			DestroyWindow(gameOverExitButton);
-			resetStage();
-			currentMenu = GameMenu;
-			ShowCursor(false);
-			break;
-		case 3:
-			PostQuitMessage(0);
-			break;
-		}
-		break;
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
@@ -1075,7 +1070,6 @@ void physics() {
 				lives--;
 			}
 			if (lives <= 0) {
-				ShowCursor(true);
 				//MessageBox(NULL, TEXT("YOU DIED\n"), TEXT("GIT GUD"), MB_OK | MB_ICONWARNING);
 				currentMenu = GameOverMenu;
 				myAudioManager->PlayBoom();
@@ -1385,11 +1379,12 @@ void mainMenuSpriteRender() {
 	buttonBgTrans = SpriteTransform(D3DXVECTOR2(buttonBgSprite.getTotalSpriteWidth()/2, buttonBgSprite.getTotalSpriteHeight()/2), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(300, 300));
 
 	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(380, 340));
+	titleTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(250, 200));
 
 	//Text
 	textRect.left = 0;
 	textRect.top = 0;
-	textRect.right = 200;
+	textRect.right = 350;
 	textRect.bottom = 125;
 
 	//Draw Sprite
@@ -1397,6 +1392,10 @@ void mainMenuSpriteRender() {
 	buttonBgTrans.transform();
 	sprite->SetTransform(&buttonBgTrans.getMat());
 	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	titleTextTrans.transform();
+	sprite->SetTransform(&titleTextTrans.getMat());
+	font->DrawText(sprite, "Welcome to Spaceship Xtreme", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	textTrans.transform();
 	sprite->SetTransform(&textTrans.getMat());
@@ -1687,6 +1686,170 @@ void crosshairSelectionMenuRender(int frames) {
 	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
 }
 
+void gameOverMenuUpdate() {
+	if (currentYpos >= 0 && currentYpos <= screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos += mouseState.lY;
+	}
+	if (currentYpos < 0 || currentYpos > screenHeight - cursorSprite.getTotalSpriteHeight()) {
+		currentYpos -= mouseState.lY;
+	}
+	if (currentXpos >= 0 && currentXpos <= screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos += mouseState.lX;
+	}
+	if (currentXpos < 0 || currentXpos > screenWidth - cursorSprite.getTotalSpriteWidth()) {
+		currentXpos -= mouseState.lX;
+	}
+	if (currentTransitionPos == 0) {
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= crosshairSelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshairSelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshairSelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshairSelectionTrans.getTrans().y) {
+				afterTransition = true;
+			}
+		}
+		if (mouseState.rgbButtons[0] & 0x80) {
+			if (cursorTrans.getTrans().x >= crosshair2SelectionTrans.getTrans().x && cursorTrans.getTrans().x <= crosshair2SelectionTrans.getTrans().x + buttonBgSprite.getTotalSpriteWidth() && cursorTrans.getTrans().y <= crosshair2SelectionTrans.getTrans().y + buttonBgSprite.getTotalSpriteHeight() && cursorTrans.getTrans().y >= crosshair2SelectionTrans.getTrans().y) {
+				afterTransition = true;
+			}
+		}
+	}
+	if (diKeys[DIK_ESCAPE] & 0x80) {
+		PostQuitMessage(0);
+	}
+}
+
+void gameOverMenuSpriteRender(int frames) {
+	if (frames > 1) {
+		frames = 1;
+	}
+	for (int i = 0; i < frames; i++) {
+		if (currentTransitionPos > 0) {
+			currentTransitionPos -= beforeTransitionPos;
+		}
+		if (afterTransition) {
+			currentTransitionPos -= afterTransitionPos;
+		}
+		if (currentTransitionPos <= -3000) {
+			afterTransition = false;
+			currentTransitionPos = 2000;
+			currentMenu = GameMenu;
+		}
+	}
+	sprite->Begin(D3DXSPRITE_ALPHABLEND);
+
+	bgTrans = SpriteTransform(D3DXVECTOR2(350, 256), 0, D3DXVECTOR2(0.7, 0.8), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(150 + currentTransitionPos, 150));
+	textTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(3, 3), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(400 + currentTransitionPos, 270));
+	continueButtonTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(340 + currentTransitionPos, 400));
+	exitButtonTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(615 + currentTransitionPos, 400));
+	cursorTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(currentXpos, currentYpos));
+
+	continueTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(390 + currentTransitionPos, 430));
+	exitTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1.5, 1.5), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(645 + currentTransitionPos, 440));
+	scoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(390 + currentTransitionPos, 350));
+	timerTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(530 + currentTransitionPos, 350));
+
+	//Text
+	textRect.left = 0;
+	textRect.top = 0;
+	textRect.right = 200;
+	textRect.bottom = 125;
+
+	bgTrans.transform();
+	sprite->SetTransform(&bgTrans.getMat());
+	sprite->Draw(bgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	continueButtonTrans.transform();
+	sprite->SetTransform(&continueButtonTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	exitButtonTrans.transform();
+	sprite->SetTransform(&exitButtonTrans.getMat());
+	sprite->Draw(buttonBgTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	continueTextTrans.transform();
+	sprite->SetTransform(&continueTextTrans.getMat());
+	font->DrawText(sprite, "RETRY", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	exitTextTrans.transform();
+	sprite->SetTransform(&exitTextTrans.getMat());
+	font->DrawText(sprite, "MAIN MENU", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	textTrans.transform();
+	sprite->SetTransform(&textTrans.getMat());
+	font->DrawText(sprite, "YOU DIED", -1, &textRect, 0, D3DCOLOR_XRGB(0, 255, 255));
+
+	//Draw Scores Font
+	scoresTextTrans.transform();
+
+	sprite->SetTransform(&scoresTextTrans.getMat());
+	strScoresPostfix = to_string(scores);
+	for (int i = 0; i < strScoresPrefix.length(); i++) {
+		scoresText[i] = strScoresPrefix[i];
+	}
+	for (int i = 0; i < strScoresPostfix.length(); i++) {
+		scoresText[i + strScoresPrefix.length()] = strScoresPostfix[i];
+	}
+	font->DrawText(sprite, scoresText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 0, 255));
+
+	for (int i = 0; i < sizeof(scoresText); i++) {
+		scoresText[i] = ' ';
+	}
+
+	//Text
+	textRect.left = 0;
+	textRect.top = 0;
+	textRect.right = 500;
+	textRect.bottom = 125;
+	//Draw Timer Font
+	timerTextTrans.transform();
+
+	sprite->SetTransform(&timerTextTrans.getMat());
+	strWaveSec = to_string(waveSec);
+	strWaveMin = to_string(waveMin);
+	for (int i = 0; i < strSurvived.length(); i++) {
+		survivedTimerText[i] = strSurvived[i];
+	}
+	totalTextLength += strSurvived.length();
+	for (int i = 0; i < strWaveMin.length(); i++) {
+		survivedTimerText[i + totalTextLength] = strWaveMin[i];
+	}
+	totalTextLength += strWaveMin.length();
+	for (int i = 0; i < strMin.length(); i++) {
+		survivedTimerText[i + totalTextLength] = strMin[i];
+	}
+	totalTextLength += strMin.length();
+	for (int i = 0; i < strWaveSec.length(); i++) {
+		survivedTimerText[i + totalTextLength] = strWaveSec[i];
+	}
+	totalTextLength += strWaveSec.length();
+	for (int i = 0; i < strSec.length(); i++) {
+		survivedTimerText[i + totalTextLength] = strSec[i];
+	}
+	font->DrawText(sprite, survivedTimerText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 0, 255));
+
+	totalTextLength = 0;
+
+	for (int i = 0; i < sizeof(survivedTimerText); i++) {
+		survivedTimerText[i] = ' ';
+	}
+
+	cursorTrans.transform();
+	sprite->SetTransform(&cursorTrans.getMat());
+	sprite->Draw(cursorTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
+
+	sprite->End();
+}
+
+void gameOverMenuRender(int frames) {
+	directStruct.d3dDevice->Clear(0, NULL, D3DCLEAR_TARGET, D3DCOLOR_XRGB(red, green, blue), 1.0f, 0);
+
+	directStruct.d3dDevice->BeginScene();
+
+	gameOverMenuSpriteRender(frames);
+
+	directStruct.d3dDevice->EndScene();
+
+	directStruct.d3dDevice->Present(NULL, NULL, NULL, NULL);
+}
+
 int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
 	srand(time(0));
@@ -1752,13 +1915,9 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 			crosshairSelectionMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == GameOverMenu) {
-			gameOverContinueButton = CreateWindow("BUTTON", "Click to continue playing", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 3, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)2, NULL, NULL);
-			gameOverExitButton = CreateWindow("BUTTON", "Exit game?", WS_VISIBLE | WS_CHILD | WS_BORDER, screenWidth / 2, screenHeight / 2, 180, 55, wndStruct.g_hWnd, (HMENU)3, NULL, NULL);
-			cleanupInput();
-			createDirectInput();
-			dInputMouseDevice->SetCooperativeLevel(wndStruct.g_hWnd, DISCL_FOREGROUND | DISCL_NONEXCLUSIVE);
 			getInput();
-			currentMenu = 8;
+			gameOverMenuUpdate();
+			gameOverMenuRender(transitionTimer->FramesToUpdate());
 		}
 		if (currentMenu == GameMenu) {
 			getInput();
