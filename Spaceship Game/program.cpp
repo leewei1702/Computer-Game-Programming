@@ -361,6 +361,7 @@ SpriteTransform continueButtonTrans;
 SpriteTransform exitButtonTrans;
 SpriteTransform continueTextTrans;
 SpriteTransform exitTextTrans;
+SpriteTransform helpText2Trans;
 
 //Default value for rgb color
 int red = 0;
@@ -711,8 +712,9 @@ void spriteRender() {
 	timerTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(520, 35));
 	livesTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(2, 2), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1000, 35));
 	helpTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 35));
-	scoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 70));
-	highScoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 105));
+	helpText2Trans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 70));
+	scoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 105));
+	highScoresTextTrans = SpriteTransform(D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(0, 0), 0, D3DXVECTOR2(50, 140));
 
 	//Text
 	textRect.left = 0;
@@ -827,6 +829,12 @@ void spriteRender() {
 	helpTextTrans.transform();
 
 	sprite->SetTransform(&helpTextTrans.getMat());
+	font->DrawText(sprite, "Left click to shoot", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+
+	//Draw Help Font 2
+	helpText2Trans.transform();
+
+	sprite->SetTransform(&helpText2Trans.getMat());
 	font->DrawText(sprite, "Press X to toggle the shooting", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Draw Scores Font
