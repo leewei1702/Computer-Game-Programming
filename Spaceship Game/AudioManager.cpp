@@ -63,6 +63,11 @@ void AudioManager::PlayPickUp()
 	//channel->setPan(0);
 	//channel->setPaused(false);
 }
+void AudioManager::PlayButtonClick()
+{
+	result = system->playSound(sound8, 0, false, &channel8);
+	channel8->setVolume(1);
+}
 
 
 void AudioManager::LoadSounds()
@@ -88,6 +93,9 @@ void AudioManager::LoadSounds()
 
 	result = system->createSound("Assets/Sound/pickup.mp3", FMOD_DEFAULT, 0, &sound7);
 	result = sound7->setMode(FMOD_LOOP_OFF);
+
+	result = system->createSound("Assets/Sound/button-click.mp3", FMOD_DEFAULT, 0, &sound8);
+	result = sound8->setMode(FMOD_LOOP_OFF);
 }
 
 void AudioManager::UpdateSound()
