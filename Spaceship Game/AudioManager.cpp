@@ -69,6 +69,12 @@ void AudioManager::PlayButtonClick()
 	channel8->setVolume(1);
 }
 
+void AudioManager::PlayDoom()
+{
+	result = system->playSound(sound9, 0, false, &channel9);
+	channel9->setVolume(1);
+}
+
 
 void AudioManager::LoadSounds()
 {
@@ -96,6 +102,9 @@ void AudioManager::LoadSounds()
 
 	result = system->createSound("Assets/Sound/button-click.mp3", FMOD_DEFAULT, 0, &sound8);
 	result = sound8->setMode(FMOD_LOOP_OFF);
+
+	result = system->createSound("Assets/Sound/Rip_and_Tear.mp3", FMOD_DEFAULT, 0, &sound9);
+	result = sound9->setMode(FMOD_LOOP_NORMAL);
 }
 
 void AudioManager::UpdateSound()
