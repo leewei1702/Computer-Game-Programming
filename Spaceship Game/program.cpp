@@ -19,6 +19,8 @@
 using namespace std;
 enum powerUp { hpPowerUp, bulletPowerUp, timePowerUp };
 enum UIController { MainMenu, GameMenu, GameOverMenu, SpaceshipSelectionMenu, CrosshairSelectionMenu };
+enum phaseList {FirstPhase, SecondPhase, ThirdPhase};
+enum asteroidList {smallAsteroid, mediumAsteroid, largeAsteroid};
 enum gameOver {Retry, Exit};
 
 //Window Structure
@@ -45,19 +47,18 @@ struct {
 class SpriteSheet
 {
 private:
-	int totalSpriteWidth = NULL;
-	int totalSpriteHeight = NULL;
-	int spriteWidth = NULL;
-	int spriteHeight = NULL;
+	float totalSpriteWidth = NULL;
+	float totalSpriteHeight = NULL;
+	float spriteWidth = NULL;
+	float spriteHeight = NULL;
 	int spriteRow = NULL;
 	int spriteCol = NULL;
 	int currentFrame = NULL;
 	int maxFrame = NULL;
 	RECT spriteRect;
-	int currentMovement = NULL;
 
 public:
-	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight, int spriteRow, int spriteCol, int currentFrame, int maxFrame)
+	SpriteSheet(float totalSpriteWidth, float totalSpriteHeight, int spriteRow, int spriteCol, int currentFrame, int maxFrame)
 	{
 		this->totalSpriteWidth = totalSpriteWidth;
 		this->totalSpriteHeight = totalSpriteHeight;
@@ -73,7 +74,7 @@ public:
 		spriteRect.left = 0;
 	}
 
-	SpriteSheet(int totalSpriteWidth, int totalSpriteHeight) {
+	SpriteSheet(float totalSpriteWidth, float totalSpriteHeight) {
 		this->totalSpriteWidth = totalSpriteWidth;
 		this->totalSpriteHeight = totalSpriteHeight;
 		spriteRect.top = 0;
@@ -82,10 +83,10 @@ public:
 		spriteRect.left = 0;
 	}
 
-	int getTotalSpriteWidth() {
+	float getTotalSpriteWidth() {
 		return totalSpriteWidth;
 	}
-	int getTotalSpriteHeight() {
+	float getTotalSpriteHeight() {
 		return totalSpriteHeight;
 	}
 	int getSpriteRow() {
@@ -100,20 +101,14 @@ public:
 	int getMaxFrame() {
 		return maxFrame;
 	}
-	int getSpriteWidth() {
+	float getSpriteWidth() {
 		return spriteWidth;
 	}
-	int getSpriteHeight() {
+	float getSpriteHeight() {
 		return spriteHeight;
-	}
-	int getCurrentMovement() {
-		return currentMovement;
 	}
 	RECT& getRect() {
 		return spriteRect;
-	}
-	void setCurrentMovement(int currentMovement) {
-		this->currentMovement = currentMovement;
 	}
 	void setCurrentFrame(int currentFrame) {
 		this->currentFrame = currentFrame - 1;
@@ -153,14 +148,6 @@ public:
 		spriteRect.bottom = spriteRect.top + spriteHeight;
 		return spriteRect;
 	}
-	RECT& movementCrop() {
-		spriteRect.left = currentFrame % spriteCol * spriteWidth;
-		spriteRect.right = spriteRect.left + spriteWidth;
-		spriteRect.top = currentMovement * spriteHeight;
-		spriteRect.bottom = spriteRect.top + spriteHeight;
-		return spriteRect;
-	}
-
 };
 
 //Sprite Transformation Class
@@ -174,7 +161,9 @@ private:
 	float rotation;
 	D3DXVECTOR2 trans;
 	int powerUpChosen;
-
+	int asteroidHp;
+	int asteroidChosen;
+	D3DXVECTOR2 asteroidVelocity = D3DXVECTOR2 (0,0);
 public:
 	SpriteTransform(D3DXVECTOR2 scalingCenter, float scalingRotation, D3DXVECTOR2 scaling, D3DXVECTOR2 rotationCenter, float rotation, D3DXVECTOR2 trans) {
 		this->scalingCenter = scalingCenter;
@@ -193,8 +182,25 @@ public:
 		this->trans = trans;
 		this->powerUpChosen = powerUpChosen;
 	}
+	SpriteTransform(D3DXVECTOR2 scalingCenter, float scalingRotation, D3DXVECTOR2 scaling, D3DXVECTOR2 rotationCenter, float rotation, D3DXVECTOR2 trans, int asteroidHp, int asteroidChosen) {
+		this->scalingCenter = scalingCenter;
+		this->scalingRotation = scalingRotation;
+		this->scaling = scaling;
+		this->rotationCenter = rotationCenter;
+		this->rotation = rotation;
+		this->trans = trans;
+		this->asteroidHp = asteroidHp;
+		this->asteroidChosen = asteroidChosen;
+	}
 	SpriteTransform() {
 
+	}
+	
+	int getAsteroidHp() {
+		return asteroidHp;
+	}
+	int getAsteroidChosen() {
+		return asteroidChosen;
 	}
 	D3DXMATRIX& getMat() {
 		return mat;
@@ -220,6 +226,15 @@ public:
 	int getPowerUpChosen() {
 		return powerUpChosen;
 	}
+	D3DXVECTOR2& getAsteroidVelocity() {
+		return asteroidVelocity;
+	}
+	void setAsteroidHp(int asteroidHp) {
+		this->asteroidHp = asteroidHp;
+	}
+	void setAsteroidChosen(int asteroidChosen) {
+		this->asteroidChosen = asteroidChosen;
+	}
 	void setMat(D3DXMATRIX mat) {
 		this->mat = mat;
 	}
@@ -241,8 +256,14 @@ public:
 	void setTrans(D3DXVECTOR2 trans) {
 		this->trans = trans;
 	}
+	void setAsteroidVelocity(D3DXVECTOR2 asteroidVelocity){
+		this->asteroidVelocity = asteroidVelocity;
+	}
 	void transform() {
 		D3DXMatrixTransformation2D(&mat, &scalingCenter, scalingRotation, &scaling, &rotationCenter, rotation, &trans);
+	}
+	void reduceAsteroidHp() {
+		asteroidHp--;
 	}
 };
 
@@ -331,8 +352,9 @@ SpriteTransform cursorTrans;
 SpriteTransform spaceshipTrans;
 SpriteTransform thrustTrans;
 SpriteTransform turretTrans;
-SpriteTransform bulletTrans[100];
-SpriteTransform asteroidTrans[100];
+//lazy to dynamically increase the size
+SpriteTransform bulletTrans[200];
+SpriteTransform asteroidTrans[200];
 SpriteTransform powerUpTrans[30];
 SpriteTransform buttonBgTrans;
 SpriteTransform textTrans;
@@ -376,6 +398,8 @@ LPD3DXFONT font = NULL;
 //Rect for text
 RECT textRect;
 RECT timerTextRect;
+RECT scoresTextRect;
+RECT livesTextRect;
 
 //Screen Resolution
 int screenWidth = 1280;
@@ -440,10 +464,10 @@ float static PI = 3.142;
 
 //Friction
 float friction = 0.01; //1 = no friction
+float asteroidFriction = 0.3;
 
 //Spaceship position
 D3DXVECTOR2 spaceshipPosition(600, 600);
-D3DXVECTOR2 spaceshipOldPosition;
 //Spaceship rotation
 float spaceshipRotation = 0;
 //Spaceship Physics
@@ -470,14 +494,30 @@ int bulletInterval = defaultBulletInterval;
 int bulletEntry = 0;
 D3DXVECTOR2 bulletVelocity;
 float bulletPower = 10;
+float bulletMass = 100;
 
 // Asteroid
 int asteroidEntry = 0;
 D3DXVECTOR2 asteroidVelocity;
-float asteroidPower = 10;
+float asteroidMass;
+float asteroidPower;
 float asteroidRotation;
+float asteroidRotationRate = 0.05;
+float asteroidStartRotation;
+int smallAsteroidHp = 1;
+int mediumAsteroidHp = 3;
+int largeAsteroidHp = 5;
+float smallAsteroidMass = 10;
+float mediumAsteroidMass = 20;
+float largeAsteroidMass = 50;
+float smallAsteroidPower = 10;
+float mediumAsteroidPower = 8;
+float largeAsteroidPower = 5;
 D3DXVECTOR2 asteroidStartPosition(500, -100);
 D3DXVECTOR2 asteroidPosition;
+D3DXVECTOR2 asteroidScaling;
+int chosenAsteroid;
+int chosenAsteroidHp;
 
 //Power Up
 boolean timeStop;
@@ -518,6 +558,21 @@ char survivedTimerText[50];
 //Game Over Button Action
 int gameOverAction;
 
+// Physics calculation
+float massSum;
+D3DXVECTOR2 diffVelocity;
+D3DXVECTOR2 diffPos;
+float dotProduct;
+float magnitude;
+float diffPosX;
+float diffPosY;
+bool collisionDetected;
+
+//Waves
+int currentPhase = FirstPhase;
+int secondPhaseTimer = 10;  //in seconds
+int thirdPhaseTimer = 30;   //in seconds
+
 void render();
 void createDirectInput();
 void resetStage() {
@@ -530,6 +585,9 @@ void resetStage() {
 	powerUpEntry = 0;
 	scores = 0;
 	toggleShoot = false;
+	currentPhase = FirstPhase;
+	myAudioManager->channel->setPaused(false);
+	myAudioManager->channel9->setPaused(true);
 	spaceshipSprite.setCurrentFrame(1);
 	spaceshipPosition = D3DXVECTOR2(600, 600);
 	spaceshipVelocity = D3DXVECTOR2(0, 0);
@@ -571,6 +629,7 @@ LRESULT CALLBACK WindowProcedure(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
 			if (!timeStop) {
 				timeStopDurationLeft = 10000;
 				timeStop = true;
+				asteroidVelocity = D3DXVECTOR2(0, 0);
 			}
 			else {
 				timeStop = false;
@@ -638,7 +697,7 @@ void createWindow() {
 
 	RegisterClass(&wndStruct.wndClass);
 
-	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Spaceship Xtreme", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
+	wndStruct.g_hWnd = CreateWindowEx(0, wndStruct.wndClass.lpszClassName, "Spaceship Xtreme 2.0 (PRESS ESC TO EXIT THE PROGRAM)", WS_OVERLAPPEDWINDOW, 0, 100, screenWidth, screenHeight, NULL, NULL, GetModuleHandle(NULL), NULL);
 
 	ShowWindow(wndStruct.g_hWnd, 1);
 	ShowCursor(false);
@@ -722,11 +781,21 @@ void spriteRender() {
 	textRect.right = 300;
 	textRect.bottom = 125;
 
+	//Scores Text
+	scoresTextRect.left = 0;
+	scoresTextRect.top = 0;
+	scoresTextRect.right = 200;
+	scoresTextRect.bottom = 125;
 	//Timer Text
 	timerTextRect.left = 0;
 	timerTextRect.top = 0;
 	timerTextRect.right = 100;
 	timerTextRect.bottom = 125;
+	//Lives Text
+	livesTextRect.left = 0;
+	livesTextRect.top = 0;
+	livesTextRect.right = 100;
+	livesTextRect.bottom = 125;
 
 	//Draw Sprite
 
@@ -773,24 +842,24 @@ void spriteRender() {
 	sprite->Draw(pointerTexture.getTexture(), NULL, NULL, NULL, D3DCOLOR_XRGB(255, 255, 255));
 
 	//Draw Mouse Position Font
-	textTrans.transform();
+	//textTrans.transform();
 
-	sprite->SetTransform(&textTrans.getMat());
-	strCurrentXpos = to_string(currentXpos);
-	strCurrentYpos = to_string(currentYpos);
-	for (int i = 0; i < strCurrentXpos.length(); i++) {
-		posText[i] = strCurrentXpos[i];
-	}
-	posText[4] = ',';
-	for (int i = 0; i < strCurrentYpos.length(); i++) {
-		posText[i + 5] = strCurrentYpos[i];
-	}
+	//sprite->SetTransform(&textTrans.getMat());
+	//strCurrentXpos = to_string(currentXpos);
+	//strCurrentYpos = to_string(currentYpos);
+	//for (int i = 0; i < strCurrentXpos.length(); i++) {
+	//	posText[i] = strCurrentXpos[i];
+	//}
+	//posText[4] = ',';
+	//for (int i = 0; i < strCurrentYpos.length(); i++) {
+	//	posText[i + 5] = strCurrentYpos[i];
+	//}
 
-	font->DrawText(sprite, posText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	//font->DrawText(sprite, posText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
-	for (int i = 0; i < sizeof(posText); i++) {
-		posText[i] = ' ';
-	}
+	//for (int i = 0; i < sizeof(posText); i++) {
+	//	posText[i] = ' ';
+	//}
 	//Draw Timer Font
 	timerTextTrans.transform();
 
@@ -820,7 +889,7 @@ void spriteRender() {
 	for (int i = 0; i < strLivesPostfix.length(); i++) {
 		livesText[i + strLivesPrefix.length()] = strLivesPostfix[i];
 	}
-	font->DrawText(sprite, livesText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	font->DrawText(sprite, livesText, -1, &livesTextRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	for (int i = 0; i < sizeof(livesText); i++) {
 		livesText[i] = ' ';
@@ -848,7 +917,7 @@ void spriteRender() {
 	for (int i = 0; i < strScoresPostfix.length(); i++) {
 		scoresText[i + strScoresPrefix.length()] = strScoresPostfix[i];
 	}
-	font->DrawText(sprite, scoresText, -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	font->DrawText(sprite, scoresText, -1, &scoresTextRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	for (int i = 0; i < sizeof(scoresText); i++) {
 		scoresText[i] = ' ';
@@ -1063,8 +1132,7 @@ void collisionDetection() {
 	}
 	// Collision Between Asteroid and Wall
 	for (int i = 0; i < asteroidEntry; i++) {
-
-		if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() || asteroidTrans[i].getTrans().y > screenHeight) {
+		if (asteroidTrans[i].getTrans().x > screenWidth || asteroidTrans[i].getTrans().x < 0 - asteroidSprite.getTotalSpriteWidth() * asteroidTrans[i].getScaling().x || asteroidTrans[i].getTrans().y > screenHeight) {
 			removeAsteroidGap(i);
 			break;
 		}
@@ -1072,7 +1140,7 @@ void collisionDetection() {
 
 	// Collision Between Asteroid and Spaceship
 	for (int i = 0; i < asteroidEntry; i++) {
-		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
+		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= asteroidTrans[i].getTrans().x && spaceshipPosition.x <= asteroidTrans[i].getTrans().x + asteroidSprite.getTotalSpriteWidth() * asteroidTrans[i].getScaling().x && spaceshipPosition.y <= asteroidTrans[i].getTrans().y + asteroidSprite.getTotalSpriteHeight() * asteroidTrans[i].getScaling().y && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= asteroidTrans[i].getTrans().y) {
 			if (lives > 0) {
 				myAudioManager->PlayHit();
 				lives--;
@@ -1089,18 +1157,59 @@ void collisionDetection() {
 			break;
 		}
 	}
+	collisionDetected = false;
 	// Collision Between Bullet and Asteroid
 	for (int i = 0; i < bulletEntry; i++) {
 		for (int j = 0; j < asteroidEntry; j++) {
-			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
+			if (bulletTrans[i].getTrans().x + bulletSprite.getTotalSpriteWidth() >= asteroidTrans[j].getTrans().x && bulletTrans[i].getTrans().x <= asteroidTrans[j].getTrans().x + asteroidSprite.getTotalSpriteWidth() * asteroidTrans[j].getScaling().x && bulletTrans[i].getTrans().y <= asteroidTrans[j].getTrans().y + asteroidSprite.getTotalSpriteHeight() * asteroidTrans[j].getScaling().y && bulletTrans[i].getTrans().y + bulletSprite.getTotalSpriteHeight() >= asteroidTrans[j].getTrans().y) {
 				scores++;
+				    //PHYSICS 
+					// DONT READ, YOU NEVER UNDERSTAND
+					// HERE IS THE LINK FOR THE PHYSICS
+					// https://en.wikipedia.org/wiki/Elastic_collision
+				if (asteroidTrans[j].getAsteroidHp() > 0) {
+					if (asteroidTrans[j].getAsteroidChosen() == smallAsteroid) {
+						asteroidPower = smallAsteroidPower;
+						asteroidMass = smallAsteroidMass;
+					}
+					else if (asteroidTrans[j].getAsteroidChosen() == mediumAsteroid) {
+						asteroidPower = mediumAsteroidPower;
+						asteroidMass = mediumAsteroidMass;
+					}
+					else if (asteroidTrans[j].getAsteroidChosen() == largeAsteroid) {
+						asteroidPower = largeAsteroidPower;
+						asteroidMass = largeAsteroidMass;
+					}
+					asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
+					asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
+					bulletVelocity.x = sin(bulletTrans[i].getRotation()) * bulletPower;
+					bulletVelocity.y = -cos(bulletTrans[i].getRotation()) * bulletPower;
+					massSum = bulletMass + asteroidMass;
+					diffVelocity = asteroidVelocity - bulletVelocity;
+					diffPos = asteroidTrans[j].getTrans() - bulletTrans[i].getTrans();
+					dotProduct = D3DXVec2Dot(&diffVelocity, &diffPos);
+					magnitude = D3DXVec2Length(&diffPos);
+					diffPosX = asteroidTrans[j].getTrans().x - bulletTrans[i].getTrans().x;
+					diffPosY = asteroidTrans[j].getTrans().y - bulletTrans[i].getTrans().y;
+					asteroidVelocity.x = asteroidVelocity.x - (2*bulletMass/massSum) * dotProduct/pow(magnitude,2) * diffPosX;
+					asteroidVelocity.y = asteroidVelocity.y - (2 * bulletMass / massSum) * dotProduct / pow(magnitude, 2) * diffPosY;
+					asteroidPosition = asteroidTrans[j].getTrans() + asteroidVelocity;
+					asteroidTrans[j].setTrans(asteroidPosition);
+					asteroidTrans[j].setAsteroidVelocity(asteroidVelocity);
+					asteroidTrans[j].reduceAsteroidHp();
+				}
+				if(asteroidTrans[j].getAsteroidHp() <= 0) {
+					removeAsteroidGap(j);
+				}
 				removeBulletGap(i);
-				removeAsteroidGap(j);
-				goto end;
+				collisionDetected = true;
+				break;
 			}
 		}
+		if (collisionDetected) {
+			break;
+		}
 	}
-end:
 	// Collision Between Spaceship and Powerup
 	for (int i = 0; i < powerUpEntry; i++) {
 		if (spaceshipPosition.x + spaceshipSprite.getSpriteWidth() >= powerUpTrans[i].getTrans().x && spaceshipPosition.x <= powerUpTrans[i].getTrans().x + hpPowerUpSprite.getTotalSpriteWidth() && spaceshipPosition.y <= powerUpTrans[i].getTrans().y + hpPowerUpSprite.getTotalSpriteHeight() && spaceshipPosition.y + spaceshipSprite.getSpriteHeight() >= powerUpTrans[i].getTrans().y) {
@@ -1122,6 +1231,7 @@ end:
 				cout << "TIMESTOP PICKED" << endl;
 				myAudioManager->PlayTheWorld();
 				timeStop = true;
+				asteroidVelocity = D3DXVECTOR2(0, 0);
 				timeStopDurationLeft = timeStopDuration;
 			}
 			removePowerUpGap(i);
@@ -1147,14 +1257,32 @@ void update(int frames) {
 
 		// Asteroid Movement
 		if (!timeStop) {
-			asteroidRotation += 0.05;
 			for (int i = 0; i < asteroidEntry; i++) {
+				asteroidRotation = asteroidTrans[i].getRotation() + asteroidRotationRate;
+				if (asteroidTrans[i].getAsteroidChosen() == smallAsteroid) {
+					asteroidPower = smallAsteroidPower;
+				}
+				else if (asteroidTrans[i].getAsteroidChosen() == mediumAsteroid) {
+					asteroidPower = mediumAsteroidPower;
+				}
+				else if (asteroidTrans[i].getAsteroidChosen() == largeAsteroid) {
+					asteroidPower = largeAsteroidPower;
+				}
 				asteroidVelocity.x = sin(180 * PI / 180) * asteroidPower;
 				asteroidVelocity.y = -cos(180 * PI / 180) * asteroidPower;
 				asteroidPosition = asteroidTrans[i].getTrans() + asteroidVelocity;
-				asteroidTrans[i] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), asteroidRotation, asteroidPosition);
+				asteroidTrans[i].setTrans(asteroidPosition);
+				asteroidTrans[i].setRotation(asteroidRotation);
 			}
 		}
+		if (timeStop) {
+			for (int i = 0; i < asteroidEntry; i++) {
+				asteroidPosition = asteroidTrans[i].getTrans() + asteroidTrans[i].getAsteroidVelocity();
+				asteroidTrans[i].setAsteroidVelocity(asteroidTrans[i].getAsteroidVelocity() *= (1-asteroidFriction));
+				asteroidTrans[i].setTrans(asteroidPosition);
+			}
+		}
+
 		// Spaceship Movement
 		if ((int)spaceshipVelocity.x == 0 && (int)spaceshipVelocity.y == 0) {
 			spaceshipSprite.staticFrame();
@@ -1196,8 +1324,6 @@ void update(int frames) {
 			spaceshipSprite.rightFrame();
 		}
 
-		spaceshipOldPosition = spaceshipPosition;
-
 		spaceshipVelocity += spaceshipAcceleration;
 		spaceshipVelocity *= (1 - friction);
 		spaceshipPosition += spaceshipVelocity;
@@ -1223,6 +1349,8 @@ void update(int frames) {
 			spaceshipPosition.y = screenHeight - spaceshipSprite.getSpriteHeight();
 			spaceshipVelocity.y *= -1;
 		}
+
+		collisionDetection();
 
 		spaceshipAcceleration = D3DXVECTOR2(0, 0);
 		spaceshipEngineForce = D3DXVECTOR2(0, 0);
@@ -1294,9 +1422,32 @@ void updateAsteroid(int frames) {
 		frames = 1;
 	}
 	if (!timeStop) {
-		asteroidStartPosition.x = 50 + (rand() % 1100);
 		for (int i = 0; i < frames; i++) {
-			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, D3DXVECTOR2(1, 1), D3DXVECTOR2(35, 35), 0, asteroidStartPosition);
+			asteroidStartPosition.x = 50 + (rand() % 1100);
+			asteroidStartRotation = rand() % 360;
+			if(currentPhase== FirstPhase){
+				chosenAsteroid = rand() % 1;
+			} 
+			if (currentPhase == SecondPhase) {
+				chosenAsteroid = rand() % 2;
+			}
+			if (currentPhase == ThirdPhase) {
+				chosenAsteroid = rand() % 3;
+			}
+
+			if (chosenAsteroid == smallAsteroid) {
+				chosenAsteroidHp = smallAsteroidHp;
+				asteroidScaling = D3DXVECTOR2(1, 1);
+			}
+			if (chosenAsteroid == mediumAsteroid) {
+				chosenAsteroidHp = mediumAsteroidHp;
+				asteroidScaling = D3DXVECTOR2(1.5, 1.5);
+			}
+			if (chosenAsteroid == largeAsteroid) {
+				chosenAsteroidHp = largeAsteroidHp;
+				asteroidScaling = D3DXVECTOR2(2, 2);
+			}
+			asteroidTrans[asteroidEntry] = SpriteTransform(D3DXVECTOR2(35, 35), 0, asteroidScaling, D3DXVECTOR2(35, 35), asteroidStartRotation, asteroidStartPosition, chosenAsteroidHp, chosenAsteroid);
 			asteroidEntry++;
 		}
 	}
@@ -1338,6 +1489,14 @@ void updateWave(int frames) {
 			if (powerUpEntry > 3) {
 				removePowerUpGap(0);
 			}
+		}
+		if (waveSec == secondPhaseTimer && waveMin < 1) {
+			currentPhase = SecondPhase;
+		}
+		if (waveSec == thirdPhaseTimer && waveMin < 1) {
+			currentPhase = ThirdPhase;
+			myAudioManager->channel->setPaused(true);
+			myAudioManager->PlayDoom();
 		}
 	}
 }
@@ -1406,7 +1565,7 @@ void mainMenuSpriteRender() {
 
 	titleTextTrans.transform();
 	sprite->SetTransform(&titleTextTrans.getMat());
-	font->DrawText(sprite, "Welcome to Spaceship Xtreme", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
+	font->DrawText(sprite, "Welcome to Spaceship Xtreme 2.0", -1, &textRect, 0, D3DCOLOR_XRGB(255, 255, 255));
 
 	textTrans.transform();
 	sprite->SetTransform(&textTrans.getMat());
@@ -1894,7 +2053,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	splashTimer->init(1);
 
 	transitionTimer->init(50);
-
+	
 	createSplashWindow();
 
 	createSplashDirectX();
@@ -1910,7 +2069,7 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 	cleanupSplashSprite();
 	cleanupSplashDirectX();
 	cleanupSplashWindow();
-
+	
 	createWindow();
 
 	createDirectX();
@@ -1957,7 +2116,6 @@ int main()  //int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, L
 			updateAsteroid(asteroidTimer->FramesToUpdate());
 			updateWave(waveTimer->FramesToUpdate());
 			update(gameTimer->FramesToUpdate());
-			collisionDetection();
 			Sound();
 			render();
 		}
